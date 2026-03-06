@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SecureVision POS — CCTV Solutions</title>
+<title>HJ Reparaciones y Más — Portal de Servicios</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -548,29 +548,33 @@
     <div class="scan-line"></div>
   </div>
   <div class="login-card">
+    <!-- Botón regresar a landing -->
+    <a href="landing.html" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text3);text-decoration:none;margin-bottom:20px;transition:color 0.2s" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text3)'">
+      ← Regresar al sitio
+    </a>
     <div class="login-logo">
-      <div class="logo-icon">📹</div>
+      <div class="logo-icon">🔧</div>
       <div>
-        <h1>SecureVision</h1>
-        <span>POS — CCTV Solutions</span>
+        <h1>HJ Reparaciones</h1>
+        <span>Portal de Servicios</span>
       </div>
     </div>
     <div class="login-tabs">
-      <div class="login-tab active" onclick="setLoginTab('admin')">Administrador</div>
-      <div class="login-tab" onclick="setLoginTab('client')">Cliente</div>
+      <div class="login-tab active" onclick="setLoginTab('admin')">Personal</div>
+      <div class="login-tab" onclick="setLoginTab('client')">Mis Servicios</div>
     </div>
     <div class="form-group">
       <label>Usuario</label>
-      <input type="text" id="login-user" placeholder="admin / cliente" value="admin">
+      <input type="text" id="login-user" placeholder="Tu usuario">
     </div>
     <div class="form-group">
       <label>Contraseña</label>
-      <input type="password" id="login-pass" placeholder="••••••" value="1234">
+      <input type="password" id="login-pass" placeholder="••••••">
     </div>
-    <button class="btn-login" onclick="doLogin()">INGRESAR AL SISTEMA</button>
-    <div class="demo-hint">
-      <strong>Demo Admin:</strong> usuario <strong>admin</strong> / pass <strong>1234</strong><br>
-      <strong>Demo Cliente:</strong> usuario <strong>cliente</strong> / pass <strong>1234</strong>
+    <button class="btn-login" onclick="doLogin()">INGRESAR</button>
+    <div style="margin-top:16px;padding:12px;background:rgba(0,229,255,0.04);border:1px solid rgba(0,229,255,0.1);border-radius:8px;font-size:12px;color:var(--text3);text-align:center;line-height:1.6">
+      ¿Necesitas ayuda? Escríbenos por
+      <a href="https://wa.me/528661755216" target="_blank" style="color:var(--accent);text-decoration:none">WhatsApp</a>
     </div>
   </div>
 </div>
@@ -580,9 +584,9 @@
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <div class="logo-icon">📹</div>
+      <div class="logo-icon">🔧</div>
       <div>
-        <h2>SecureVision</h2>
+        <h2>HJ Reparaciones</h2>
         <small id="sidebar-role">Admin Panel</small>
       </div>
     </div>
@@ -1123,6 +1127,51 @@
             </div>
             <iframe id="format-preview-frame" style="flex:1;border:none;background:#fff"></iframe>
           </div>
+        </div>
+      </div>
+
+      <!-- CHAT EN VIVO -->
+      <div class="page" id="page-chat">
+        <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;height:calc(100vh - 100px)" id="chat-layout">
+
+          <!-- Lista de conversaciones -->
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;overflow:hidden">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+              <span style="font-weight:700;font-family:'Rajdhani',sans-serif;font-size:15px">💬 Conversaciones</span>
+              <span id="chat-unread-total" style="background:var(--accent2);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;display:none">0</span>
+            </div>
+            <div id="chat-sessions-list" style="flex:1;overflow-y:auto;padding:8px">
+              <div style="text-align:center;color:var(--text3);padding:40px 16px;font-size:13px">
+                <div style="font-size:32px;margin-bottom:10px">💬</div>
+                Aún no hay conversaciones.<br>Aparecerán aquí cuando alguien escriba desde la página web.
+              </div>
+            </div>
+          </div>
+
+          <!-- Ventana de chat activo -->
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;overflow:hidden">
+            <!-- Header -->
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px" id="active-chat-header">
+              <div style="font-size:28px">💬</div>
+              <div>
+                <div style="font-weight:700;font-family:'Rajdhani',sans-serif;font-size:16px" id="active-chat-name">Selecciona una conversación</div>
+                <div style="font-size:11px;color:var(--text3)" id="active-chat-meta">Las conversaciones de visitantes aparecerán en el panel izquierdo</div>
+              </div>
+            </div>
+            <!-- Messages -->
+            <div id="pos-chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px">
+            </div>
+            <!-- Reply input -->
+            <div id="pos-chat-input-area" style="padding:12px;border-top:1px solid var(--border);display:none;gap:8px;align-items:flex-end">
+              <textarea id="pos-reply-input" placeholder="Escribe tu respuesta..." rows="1"
+                style="flex:1;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;resize:none;outline:none;max-height:100px;line-height:1.4"
+                oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();posSendReply()}"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+              <button onclick="posSendReply()" style="padding:10px 20px;background:var(--accent);color:#000;border:none;border-radius:10px;font-weight:700;font-family:'Rajdhani',sans-serif;font-size:14px;cursor:pointer;white-space:nowrap">Enviar ↵</button>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -1715,6 +1764,7 @@ function buildNav(isAdmin) {
   if(hasPerm('employees')) nav+=`<div class="nav-item" onclick="navigate('employees')"><span class="nav-icon">🧑‍💼</span>Empleados</div>`;
   if(hasPerm('employees')) nav+=`<div class="nav-item" onclick="navigate('activity');buildActivity()"><span class="nav-icon">📜</span>Historial</div>`;
   if(hasPerm('reports'))   nav+=`<div class="nav-item" onclick="navigate('formats');buildFormats()"><span class="nav-icon">🖨️</span>Formatos</div>`;
+  if(hasPerm('dashboard')) nav+=`<div class="nav-item" onclick="navigate('chat');buildChatPanel()" id="nav-chat"><span class="nav-icon">💬</span>Chat Web <span id="nav-chat-badge" style="background:var(--accent2);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;display:none;margin-left:4px">0</span></div>`;
   if(hasPerm('reports'))   nav+=`<div class="nav-item" onclick="window.open('https://analytics.google.com/analytics/web/#/p${488230741}/reports/intelligenthome','_blank')" style="color:var(--accent)"><span class="nav-icon">📊</span>Ver Analytics</div>`;
   document.getElementById('nav-menu').innerHTML = nav;
 }
@@ -1724,7 +1774,7 @@ function navigate(page) {
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const p = document.getElementById('page-'+page);
   if(p) p.classList.add('active');
-  const titles = {dashboard:'📊 Dashboard',pos:'🛒 Punto de Venta',inventory:'📦 Inventario',orders:'📋 Órdenes',clients:'👥 Clientes',catalog:'🛍️ Catálogo CCTV',mypedidos:'📦 Mis Pedidos',support:'💬 Soporte',reports:'📈 Reportes de Caja',employees:'🧑‍💼 Empleados',activity:'📜 Historial de Actividad',quotes:'📄 Cotizaciones',formats:'🖨️ Editor de Formatos'};
+  const titles = {dashboard:'📊 Dashboard',pos:'🛒 Punto de Venta',inventory:'📦 Inventario',orders:'📋 Órdenes',clients:'👥 Clientes',catalog:'🛍️ Catálogo CCTV',mypedidos:'📦 Mis Pedidos',support:'💬 Soporte',reports:'📈 Reportes de Caja',employees:'🧑‍💼 Empleados',activity:'📜 Historial de Actividad',quotes:'📄 Cotizaciones',formats:'🖨️ Editor de Formatos',chat:'💬 Chat Web en Vivo'};
   document.getElementById('page-title').textContent = titles[page]||page;
   document.querySelectorAll('.nav-item').forEach(n=>{if(n.textContent.trim().toLowerCase().includes(page.replace('my','mis').replace('pedidos','pedidos')||page)) n.classList.add('active');});
 }
@@ -3480,6 +3530,175 @@ function updateMobileCartBtn() {
 window.addEventListener('resize', applyMobileClass);
 // Apply on load
 applyMobileClass();
+
+// ── CHAT EN VIVO (Firebase) ──
+let posDb = null, activeChatSession = null, chatSessions = {}, chatUnreadTotal = 0;
+
+async function initPosFirebase() {
+  if(posDb) return posDb;
+  try {
+    const { initializeApp, getApps } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+    const { getDatabase, ref, onChildAdded, onChildChanged, push, set, serverTimestamp, onValue }
+      = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBwHRcdelW9-bN9A6aH8qgecX_--V0_v8I",
+      authDomain: "hj-reparaciones-chat.firebaseapp.com",
+      databaseURL: "https://hj-reparaciones-chat-default-rtdb.firebaseio.com",
+      projectId: "hj-reparaciones-chat",
+      storageBucket: "hj-reparaciones-chat.firebasestorage.app",
+      messagingSenderId: "970106362467",
+      appId: "1:970106362467:web:da6e3a3b8a84bbdb7f7656",
+      measurementId: "G-R0LDPX5WF2"
+    };
+
+    const apps = getApps();
+    const app = apps.find(a=>a.name==='pos-chat') || initializeApp(firebaseConfig, 'pos-chat');
+    posDb = { db: getDatabase(app), ref, onChildAdded, onChildChanged, push, set, serverTimestamp, onValue };
+
+    // Listen for all sessions
+    onChildAdded(ref(posDb.db, 'chats'), snap => {
+      listenSession(snap.key, snap.val());
+    });
+    onChildChanged(ref(posDb.db, 'chats'), snap => {
+      listenSession(snap.key, snap.val());
+    });
+
+    return posDb;
+  } catch(e) {
+    console.warn('Firebase POS error:', e);
+    return null;
+  }
+}
+
+function listenSession(sessionId, data) {
+  if(!data || !data.info) return;
+  if(!chatSessions[sessionId]) {
+    chatSessions[sessionId] = { id: sessionId, info: data.info, messages: [], unread: 0 };
+    // Listen for new messages in this session
+    const { ref, onChildAdded } = posDb;
+    onChildAdded(ref(posDb.db, `chats/${sessionId}/messages`), snap => {
+      const msg = snap.val();
+      if(!msg) return;
+      if(!chatSessions[sessionId]) chatSessions[sessionId] = { id:sessionId, info:data.info, messages:[], unread:0 };
+      chatSessions[sessionId].messages.push({...msg, key: snap.key});
+      // Count unread from visitor
+      if(msg.from === 'visitor' && activeChatSession !== sessionId) {
+        chatSessions[sessionId].unread = (chatSessions[sessionId].unread||0) + 1;
+        chatUnreadTotal++;
+        updateChatBadge();
+      }
+      renderSessionsList();
+      // If this session is active, append message
+      if(activeChatSession === sessionId && msg.from === 'visitor') {
+        appendPosChatMsg(msg.text, 'visitor', msg.visitorName, msg.time);
+      }
+    });
+  } else {
+    chatSessions[sessionId].info = data.info;
+  }
+  renderSessionsList();
+}
+
+function renderSessionsList() {
+  const el = document.getElementById('chat-sessions-list');
+  if(!el) return;
+  const sessions = Object.values(chatSessions);
+  if(!sessions.length) return;
+  el.innerHTML = sessions.map(s => {
+    const lastMsg = s.messages[s.messages.length-1];
+    const isActive = activeChatSession === s.id;
+    const unread = s.unread || 0;
+    return `<div onclick="openChatSession('${s.id}')" style="padding:12px;border-radius:10px;cursor:pointer;margin-bottom:6px;background:${isActive?'rgba(0,229,255,0.08)':'var(--surface2)'};border:1px solid ${isActive?'var(--accent)':'var(--border)'};transition:all 0.2s">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <span style="font-weight:700;font-size:13px">${escPOS(s.info?.visitorName||'Visitante')}</span>
+        ${unread>0?`<span style="background:var(--accent2);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">${unread}</span>`:''}
+      </div>
+      <div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lastMsg?escPOS(lastMsg.text.substring(0,50)):'Sin mensajes'}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">${lastMsg?.time||''}</div>
+    </div>`;
+  }).join('');
+}
+
+function openChatSession(sessionId) {
+  activeChatSession = sessionId;
+  const session = chatSessions[sessionId];
+  if(!session) return;
+  // Reset unread
+  chatUnreadTotal -= (session.unread||0);
+  session.unread = 0;
+  updateChatBadge();
+  renderSessionsList();
+  // Update header
+  const name = session.info?.visitorName || 'Visitante';
+  document.getElementById('active-chat-name').textContent = '💬 ' + name;
+  document.getElementById('active-chat-meta').textContent = `Sesión iniciada · ${session.info?.startedAt ? new Date(session.info.startedAt).toLocaleString('es-MX') : ''}`;
+  // Render all messages
+  const container = document.getElementById('pos-chat-messages');
+  if(container) {
+    container.innerHTML = '';
+    session.messages.forEach(msg => {
+      appendPosChatMsg(msg.text, msg.from, msg.from==='agent'?'HJ Reparaciones':(msg.visitorName||name), msg.time);
+    });
+  }
+  // Show input
+  const inputArea = document.getElementById('pos-chat-input-area');
+  if(inputArea) { inputArea.style.display='flex'; document.getElementById('pos-reply-input')?.focus(); }
+  // Set agent typing indicator off
+  if(posDb) posDb.set(posDb.ref(posDb.db, `chats/${sessionId}/agentTyping`), false);
+}
+
+function appendPosChatMsg(text, from, sender, time) {
+  const container = document.getElementById('pos-chat-messages');
+  if(!container) return;
+  const isAgent = from === 'agent';
+  const t = time || new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  const div = document.createElement('div');
+  div.style.cssText = `display:flex;flex-direction:column;max-width:75%;${isAgent?'align-self:flex-end;align-items:flex-end':'align-self:flex-start;align-items:flex-start'}`;
+  div.innerHTML = `
+    <div style="padding:10px 14px;border-radius:${isAgent?'14px 14px 4px 14px':'14px 14px 14px 4px'};font-size:13px;line-height:1.5;word-break:break-word;background:${isAgent?'var(--accent)':'var(--surface2)'};color:${isAgent?'#000':'var(--text)'};border:${isAgent?'none':'1px solid var(--border)'}">
+      ${escPOS(text)}
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:3px;padding:0 4px">${escPOS(sender)} · ${t}</div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+async function posSendReply() {
+  const el = document.getElementById('pos-reply-input');
+  const text = el?.value.trim();
+  if(!text || !activeChatSession) return;
+  el.value = ''; el.style.height='auto';
+  const time = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  appendPosChatMsg(text, 'agent', 'HJ Reparaciones', time);
+  if(posDb) {
+    await posDb.push(posDb.ref(posDb.db, `chats/${activeChatSession}/messages`), {
+      text, from: 'agent', time, ts: posDb.serverTimestamp(), read: false
+    });
+  }
+}
+
+function updateChatBadge() {
+  const badge = document.getElementById('nav-chat-badge');
+  const total = document.getElementById('chat-unread-total');
+  if(chatUnreadTotal > 0) {
+    if(badge) { badge.textContent=chatUnreadTotal; badge.style.display='inline'; }
+    if(total) { total.textContent=chatUnreadTotal; total.style.display='inline'; }
+  } else {
+    if(badge) badge.style.display='none';
+    if(total) total.style.display='none';
+  }
+}
+
+function escPOS(t) {
+  if(!t) return '';
+  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+function buildChatPanel() {
+  initPosFirebase();
+  renderSessionsList();
+}
 
 // ── KEY ──
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none') doLogin(); });
