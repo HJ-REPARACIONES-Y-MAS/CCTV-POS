@@ -157,6 +157,33 @@
     cursor:pointer; color:var(--text2); font-size:15px; transition:all 0.2s;
   }
   .icon-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .notif-wrapper { position:relative; }
+  .notif-badge {
+    position:absolute; top:-4px; right:-4px;
+    background:var(--accent2); color:#fff;
+    font-size:10px; font-weight:700; min-width:16px; height:16px;
+    border-radius:8px; display:flex; align-items:center; justify-content:center;
+    padding:0 3px; pointer-events:none;
+  }
+  .notif-panel {
+    display:none; position:absolute; top:44px; right:0;
+    width:320px; background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; padding:16px; z-index:200;
+    box-shadow:0 8px 32px rgba(0,0,0,0.4);
+    max-height:400px; overflow-y:auto;
+  }
+  .notif-panel.open { display:block; animation:fadeIn 0.15s ease; }
+  .notif-item {
+    display:flex; gap:10px; padding:10px 8px;
+    border-bottom:1px solid var(--border); cursor:pointer;
+    border-radius:6px; transition:background 0.15s;
+  }
+  .notif-item:hover { background:var(--surface2); }
+  .notif-item:last-child { border-bottom:none; }
+  .notif-item.unread { background:rgba(0,229,255,0.04); }
+  .notif-icon { font-size:20px; flex-shrink:0; margin-top:2px; }
+  .notif-text strong { display:block; font-size:13px; margin-bottom:2px; }
+  .notif-text small { font-size:11px; color:var(--text3); }
   .content { padding:28px; }
 
   /* ── PAGES ── */
@@ -325,17 +352,20 @@
   .clients-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
   .client-card {
     background:var(--surface); border:1px solid var(--border); border-radius:12px;
-    padding:18px; transition:all 0.2s;
+    padding:18px; transition:all 0.2s; position:relative;
   }
   .client-card:hover { border-color:var(--accent3); box-shadow:0 4px 20px rgba(124,77,255,0.1); }
+  .client-card.general-card { border-style:dashed; opacity:0.7; }
   .client-header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
-  .client-avatar { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; flex-shrink:0; }
+  .client-avatar { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; flex-shrink:0; }
   .client-name { font-size:15px; font-weight:600; }
   .client-since { font-size:11px; color:var(--text2); }
-  .client-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .client-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
   .client-stat { background:var(--surface2); border-radius:7px; padding:10px; text-align:center; }
   .client-stat strong { display:block; font-family:'Rajdhani',sans-serif; font-size:18px; font-weight:700; }
   .client-stat small { font-size:10px; color:var(--text2); }
+  .client-actions { display:flex; gap:6px; }
+  .client-info-row { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text2); margin-bottom:4px; }
 
   /* ── CATALOG (cliente) ── */
   .catalog-hero {
@@ -471,8 +501,21 @@
           <span style="color:var(--text3)">🔍</span>
           <input placeholder="Buscar productos, clientes...">
         </div>
-        <div class="icon-btn" title="Notificaciones">🔔</div>
-        <div class="icon-btn" title="Configuración">⚙️</div>
+        <!-- Notificaciones -->
+        <div class="notif-wrapper" id="notif-wrapper">
+          <div class="icon-btn" id="notif-btn" onclick="toggleNotifPanel()" title="Notificaciones">
+            🔔
+            <span class="notif-badge" id="notif-badge" style="display:none">0</span>
+          </div>
+          <div class="notif-panel" id="notif-panel">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <strong style="font-size:14px">🔔 Notificaciones</strong>
+              <span onclick="clearAllNotifs()" style="font-size:11px;color:var(--text3);cursor:pointer">Limpiar todo</span>
+            </div>
+            <div id="notif-list"></div>
+          </div>
+        </div>
+        <div class="icon-btn" title="Configuración" onclick="navigate('employees')">⚙️</div>
       </div>
     </div>
 
@@ -555,14 +598,7 @@
           <div class="cart-panel">
             <div class="cart-title">🛒 Orden Actual</div>
             <div class="cart-sub" id="cart-count">0 artículos</div>
-            <select class="client-select" id="cart-client">
-              <option value="">— Seleccionar cliente —</option>
-              <option>Carlos Hernández</option>
-              <option>María González</option>
-              <option>TechSeguridad SA</option>
-              <option>Roberto Vega</option>
-              <option>Construmax MX</option>
-            </select>
+            <select class="client-select" id="cart-client"></select>
             <div class="cart-items" id="cart-items"></div>
             <hr class="cart-divider">
             <div class="cart-row"><span style="color:var(--text2)">Subtotal</span><span id="cart-subtotal">$0.00</span></div>
@@ -610,17 +646,23 @@
       <!-- ÓRDENES -->
       <div class="page" id="page-orders">
         <div class="inv-controls" style="margin-bottom:20px">
-          <div class="inv-search"><span>🔍</span><input placeholder="Buscar orden, cliente..."></div>
-          <select class="client-select" style="width:auto;flex-shrink:0">
-            <option>Todos los estados</option>
-            <option>Pagado</option>
-            <option>Pendiente</option>
-            <option>Cancelado</option>
+          <div class="inv-search"><span>🔍</span><input id="ord-search" placeholder="Buscar por orden o cliente..." oninput="filterOrders()"></div>
+          <select class="client-select" id="ord-status" style="width:auto;flex-shrink:0" onchange="filterOrders()">
+            <option value="">Todos los estados</option>
+            <option value="paid">Pagado</option>
+            <option value="pending">Pendiente</option>
+            <option value="cancelled">Cancelado</option>
+          </select>
+          <select class="client-select" id="ord-date" style="width:auto;flex-shrink:0" onchange="filterOrders()">
+            <option value="">Todas las fechas</option>
+            <option value="today">Hoy</option>
+            <option value="week">Esta semana</option>
+            <option value="month">Este mes</option>
           </select>
         </div>
         <div class="card">
           <table class="table">
-            <thead><tr><th>#Orden</th><th>Cliente</th><th>Productos</th><th>Pago</th><th>Total</th><th>Estado</th><th>Fecha</th></tr></thead>
+            <thead><tr><th>#Orden</th><th>Cliente</th><th>Productos</th><th>Pago</th><th>Total</th><th>Estado</th><th>Fecha</th><th>Modificado por</th><th></th></tr></thead>
             <tbody id="orders-table"></tbody>
           </table>
         </div>
@@ -629,13 +671,183 @@
       <!-- CLIENTES -->
       <div class="page" id="page-clients">
         <div class="inv-controls" style="margin-bottom:20px">
-          <div class="inv-search"><span>🔍</span><input placeholder="Buscar cliente..."></div>
-          <button class="btn-primary" onclick="showToast('✅ Función próximamente')">+ Nuevo Cliente</button>
+          <div class="inv-search"><span>🔍</span><input id="client-search" placeholder="Buscar por nombre, teléfono..." oninput="filterClients()"></div>
+          <button class="btn-primary" onclick="openClientModal(null)">+ Nuevo Cliente</button>
         </div>
         <div class="clients-grid" id="clients-grid"></div>
       </div>
 
-      <!-- CLIENT: CATÁLOGO -->
+      <!-- REPORTES DE CAJA -->
+      <div class="page" id="page-reports">
+        <!-- Selector de fecha y caja -->
+        <div class="inv-controls" style="margin-bottom:20px">
+          <select class="client-select" id="report-caja" style="width:auto" onchange="buildReports()">
+            <option value="all">Todas las cajas</option>
+          </select>
+          <select class="client-select" id="report-period" style="width:auto" onchange="buildReports()">
+            <option value="today">Hoy</option>
+            <option value="week">Esta semana</option>
+            <option value="month">Este mes</option>
+          </select>
+          <button class="btn-primary" onclick="printReport()">🖨️ Imprimir / PDF</button>
+          <button class="btn-secondary" onclick="openCajaModal()" style="padding:10px 18px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;cursor:pointer">📂 Apertura/Cierre</button>
+        </div>
+
+        <!-- Stats rápidas -->
+        <div class="stats-grid" id="report-stats" style="margin-bottom:20px"></div>
+
+        <!-- Dos columnas -->
+        <div class="grid-2b" style="margin-bottom:16px">
+          <!-- Desglose por método de pago -->
+          <div class="card">
+            <div class="card-header"><div class="card-title">💳 Por Método de Pago</div></div>
+            <div id="report-pay-methods"></div>
+          </div>
+          <!-- Productos más vendidos -->
+          <div class="card">
+            <div class="card-header"><div class="card-title">🏆 Productos Más Vendidos</div></div>
+            <div id="report-top-products"></div>
+          </div>
+        </div>
+
+        <!-- Ventas por empleado -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><div class="card-title">👤 Ventas por Empleado</div></div>
+          <div id="report-by-employee"></div>
+        </div>
+
+        <!-- Tabla detalle órdenes -->
+        <div class="card" id="report-print-area">
+          <div class="card-header">
+            <div class="card-title">📋 Detalle de Órdenes</div>
+          </div>
+          <table class="table">
+            <thead><tr><th>#Orden</th><th>Cliente</th><th>Empleado</th><th>Caja</th><th>Pago</th><th>Total</th><th>Estado</th><th>Hora</th></tr></thead>
+            <tbody id="report-orders-table"></tbody>
+          </table>
+        </div>
+
+        <!-- Estado de cajas -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-header"><div class="card-title">🏧 Estado de Cajas</div></div>
+          <div id="cajas-status" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:4px"></div>
+        </div>
+      </div>
+
+      <!-- EMPLEADOS -->
+      <div class="page" id="page-employees">
+        <div class="inv-controls" style="margin-bottom:20px">
+          <div class="inv-search"><span>🔍</span><input id="emp-search" placeholder="Buscar empleado..." oninput="filterEmployees()"></div>
+          <button class="btn-primary" onclick="openEmployeeModal(null)">+ Nuevo Empleado</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px" id="employees-grid"></div>
+      </div>
+
+      <!-- COTIZACIONES -->
+      <div class="page" id="page-quotes">
+        <div class="inv-controls" style="margin-bottom:20px">
+          <div class="inv-search"><span>🔍</span><input id="quote-search" placeholder="Buscar por número o cliente..." oninput="filterQuotesList()"></div>
+          <button class="btn-primary" onclick="openNewQuote()">+ Nueva Cotización</button>
+        </div>
+        <!-- Lista de cotizaciones -->
+        <div id="quotes-list-view">
+          <div class="card">
+            <table class="table">
+              <thead><tr><th>#Cotización</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Vigencia</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody id="quotes-table"></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Editor de cotización -->
+        <div id="quote-editor" style="display:none">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+            <button onclick="closeQuoteEditor()" style="padding:8px 14px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px">← Volver</button>
+            <h2 id="quote-editor-title" style="font-family:'Rajdhani',sans-serif;font-size:22px">Nueva Cotización</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start">
+            <!-- Izquierda: datos + productos -->
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <!-- Datos generales -->
+              <div class="card">
+                <div class="card-title" style="margin-bottom:14px">📋 Datos de la Cotización</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                  <div class="form-group">
+                    <label>Cliente</label>
+                    <select id="qe-client" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none" onchange="fillClientData()"></select>
+                  </div>
+                  <div class="form-group">
+                    <label>Vigencia (días)</label>
+                    <input type="number" id="qe-vigencia" value="15" min="1" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+                  </div>
+                  <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="text" id="qe-phone" placeholder="866 123 4567" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+                  </div>
+                  <div class="form-group">
+                    <label>Email</label>
+                    <input type="text" id="qe-email" placeholder="correo@email.com" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+                  </div>
+                  <div class="form-group" style="grid-column:1/-1">
+                    <label>Dirección</label>
+                    <input type="text" id="qe-address" placeholder="Calle, Colonia, Ciudad" style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+                  </div>
+                  <div class="form-group" style="grid-column:1/-1">
+                    <label>Notas / Condiciones</label>
+                    <textarea id="qe-notes" placeholder="Ej: Precios sujetos a cambio sin previo aviso. Instalación no incluida." style="width:100%;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;height:70px;resize:vertical;font-family:inherit"></textarea>
+                  </div>
+                </div>
+              </div>
+              <!-- Agregar productos -->
+              <div class="card">
+                <div class="card-title" style="margin-bottom:14px">🛒 Agregar Productos</div>
+                <div style="display:flex;gap:8px;margin-bottom:12px">
+                  <select id="qe-prod-select" style="flex:1;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none"></select>
+                  <input type="number" id="qe-prod-qty" value="1" min="1" style="width:70px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;text-align:center">
+                  <button class="btn-primary" onclick="addQuoteProduct()">+ Agregar</button>
+                </div>
+                <!-- Tabla de productos en cotización -->
+                <table class="table" id="qe-products-table">
+                  <thead><tr><th>Producto</th><th>Precio Unit.</th><th>Cant.</th><th>Subtotal</th><th></th></tr></thead>
+                  <tbody id="qe-products-body"></tbody>
+                </table>
+                <div id="qe-empty" style="text-align:center;color:var(--text3);padding:20px;font-size:13px">Sin productos — selecciona uno arriba</div>
+              </div>
+            </div>
+            <!-- Derecha: resumen y acciones -->
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div class="card">
+                <div class="card-title" style="margin-bottom:14px">💰 Resumen</div>
+                <div class="cart-row"><span style="color:var(--text2)">Subtotal</span><span id="qe-subtotal">$0.00</span></div>
+                <div class="cart-row"><span style="color:var(--text2)">IVA (16%)</span><span id="qe-iva">$0.00</span></div>
+                <hr class="cart-divider" style="margin:10px 0">
+                <div class="cart-row"><strong>Total</strong><span class="cart-total" id="qe-total">$0.00</span></div>
+              </div>
+              <div class="card" style="display:flex;flex-direction:column;gap:8px">
+                <button class="btn-primary" style="width:100%;padding:14px" onclick="generateQuotePDF()">🖨️ Generar PDF</button>
+                <button onclick="saveQuote('sent')" style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;font-weight:600">💾 Guardar como Enviada</button>
+                <button onclick="saveQuote('draft')" style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;font-size:13px">📝 Guardar Borrador</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="page" id="page-activity">
+        <div class="inv-controls" style="margin-bottom:20px">
+          <div class="inv-search"><span>🔍</span><input id="activity-search" placeholder="Buscar por usuario o acción..." oninput="filterActivity()"></div>
+          <select class="client-select" id="activity-filter" style="width:auto" onchange="filterActivity()">
+            <option value="">Toda la actividad</option>
+            <option value="login">Inicios de sesión</option>
+            <option value="logout">Cierres de sesión</option>
+            <option value="sale">Ventas</option>
+            <option value="inventory">Inventario</option>
+            <option value="client">Clientes</option>
+            <option value="caja">Caja</option>
+          </select>
+          <button onclick="activityLog=[];renderActivityLog(activityLog)" style="padding:10px 18px;border-radius:8px;background:rgba(255,61,87,0.1);border:1px solid rgba(255,61,87,0.2);color:var(--accent2);font-size:13px;cursor:pointer">🗑️ Limpiar</button>
+        </div>
+        <div class="card"><div id="activity-log-container"></div></div>
+      </div>
+
       <div class="page" id="page-catalog">
         <div class="catalog-hero">
           <div>
@@ -776,7 +988,164 @@
   </div>
 </div>
 
-<!-- TOAST -->
+<!-- MODAL EMPLEADO -->
+<div class="modal-overlay" id="employee-modal">
+  <div class="modal">
+    <h3 id="emp-modal-title">🧑‍💼 Nuevo Empleado</h3>
+    <input type="hidden" id="em-id">
+    <div class="modal-grid">
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Nombre completo <span style="color:var(--accent2)">*</span></label>
+        <input type="text" id="em-name" placeholder="Juan Pérez" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+      </div>
+      <div class="form-group">
+        <label>Usuario <span style="color:var(--accent2)">*</span></label>
+        <input type="text" id="em-user" placeholder="cajero1" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+      </div>
+      <div class="form-group">
+        <label>Contraseña <span style="color:var(--accent2)">*</span></label>
+        <input type="text" id="em-pass" placeholder="••••" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+      </div>
+      <div class="form-group">
+        <label>Rol</label>
+        <select id="em-role" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+          <option value="admin">👑 Administrador</option>
+          <option value="supervisor">🔑 Supervisor</option>
+          <option value="cajero">💼 Cajero</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Caja asignada</label>
+        <select id="em-caja" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none"></select>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Turno / Horario</label>
+        <input type="text" id="em-turno" placeholder="Matutino 8am-2pm" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+      </div>
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="em-active" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+          <option value="true">✅ Activo</option>
+          <option value="false">⛔ Inactivo</option>
+        </select>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label style="margin-bottom:10px;display:block">🔐 Permisos</label>
+        <div id="em-perms-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button type="button" onclick="setAllPerms(true)" style="flex:1;padding:6px;border-radius:6px;border:1px solid var(--border);background:rgba(0,230,118,0.1);color:var(--green);cursor:pointer;font-size:12px">✅ Activar todos</button>
+          <button type="button" onclick="setAllPerms(false)" style="flex:1;padding:6px;border-radius:6px;border:1px solid var(--border);background:rgba(255,61,87,0.1);color:var(--accent2);cursor:pointer;font-size:12px">⛔ Quitar todos</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="saveEmployee()">GUARDAR</button>
+      <button class="btn-secondary" onclick="closeEmployeeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL APERTURA/CIERRE CAJA -->
+<div class="modal-overlay" id="caja-modal">
+  <div class="modal">
+    <h3>🏧 Apertura / Cierre de Caja</h3>
+    <div id="cajas-list" style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px"></div>
+    <div style="border-top:1px solid var(--border);padding-top:16px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--accent)">➕ Nueva Caja</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="new-caja-name" placeholder="Ej: Caja 4" style="flex:1;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+        <button class="btn-primary" onclick="addCaja()">Agregar</button>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn-secondary" onclick="closeCajaModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ELIMINAR EMPLEADO -->
+<div class="modal-overlay" id="delete-emp-modal">
+  <div class="modal" style="width:360px;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">🧑‍💼</div>
+    <h3 style="margin-bottom:8px">¿Eliminar empleado?</h3>
+    <p id="delete-emp-name" style="color:var(--text2);font-size:14px;margin-bottom:20px"></p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn-primary btn-danger" onclick="confirmDeleteEmployee()">SÍ, ELIMINAR</button>
+      <button class="btn-secondary" onclick="document.getElementById('delete-emp-modal').classList.remove('open')">Cancelar</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="client-modal">
+  <div class="modal">
+    <h3 id="client-modal-title">👤 Nuevo Cliente</h3>
+    <input type="hidden" id="cm-id">
+    <div class="modal-grid">
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Nombre completo / Empresa <span style="color:var(--accent2)">*</span></label>
+        <input type="text" id="cm-name" placeholder="Carlos Hernández / TechSeguridad SA" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+      </div>
+      <div class="form-group">
+        <label>Teléfono / WhatsApp <span style="color:var(--accent2)">*</span></label>
+        <input type="text" id="cm-phone" placeholder="866 123 4567" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+      </div>
+      <div class="form-group">
+        <label>Email <span style="color:var(--text3);font-size:10px">(opcional)</span></label>
+        <input type="email" id="cm-email" placeholder="correo@email.com" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Dirección <span style="color:var(--text3);font-size:10px">(opcional)</span></label>
+        <input type="text" id="cm-address" placeholder="Calle, Colonia, Ciudad" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+      </div>
+      <div class="form-group">
+        <label>RFC <span style="color:var(--text3);font-size:10px">(opcional — para facturación)</span></label>
+        <input type="text" id="cm-rfc" placeholder="HECC850101ABC" maxlength="13" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;text-transform:uppercase">
+      </div>
+      <div class="form-group">
+        <label>Notas <span style="color:var(--text3);font-size:10px">(opcional)</span></label>
+        <input type="text" id="cm-notes" placeholder="Ej: Paga puntual, requiere factura..." style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="saveClient()">GUARDAR</button>
+      <button class="btn-secondary" onclick="closeClientModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETALLE CLIENTE -->
+<div class="modal-overlay" id="client-detail-modal">
+  <div class="modal" style="width:520px">
+    <div id="client-detail-content"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn-secondary" onclick="closeClientDetailModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ELIMINAR CLIENTE -->
+<div class="modal-overlay" id="delete-client-modal">
+  <div class="modal" style="width:360px;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">👤</div>
+    <h3 style="margin-bottom:8px">¿Eliminar cliente?</h3>
+    <p id="delete-client-name" style="color:var(--text2);font-size:14px;margin-bottom:20px"></p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn-primary btn-danger" onclick="confirmDeleteClient()">SÍ, ELIMINAR</button>
+      <button class="btn-secondary" onclick="closeDeleteClientModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+<!-- PDF PREVIEW OVERLAY -->
+<div id="pdf-preview-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;flex-direction:column;align-items:stretch">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:#0d1117;flex-shrink:0">
+    <span style="color:#fff;font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700">🖨️ Vista Previa — Cotización</span>
+    <div style="display:flex;gap:10px">
+      <button onclick="document.getElementById('pdf-preview-frame').contentWindow.print()" style="padding:8px 20px;border-radius:7px;border:none;background:#00e5ff;color:#000;font-weight:700;cursor:pointer;font-size:13px">🖨️ Imprimir / Guardar PDF</button>
+      <button onclick="document.getElementById('pdf-preview-overlay').style.display='none';document.getElementById('pdf-preview-frame').src=''" style="padding:8px 16px;border-radius:7px;border:1px solid #444;background:transparent;color:#fff;cursor:pointer;font-size:13px">✕ Cerrar</button>
+    </div>
+  </div>
+  <iframe id="pdf-preview-frame" src="" style="flex:1;border:none;background:#fff"></iframe>
+</div>
+
 <div id="toast">✅ Mensaje</div>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
@@ -815,17 +1184,68 @@ const orders = [
   {id:'#001230',client:'Construmax MX',products:'Kit 4 Cámaras',pay:'Crédito',total:6800,status:'cancelled',date:'03/Mar/2026'},
 ];
 
-const clients = [
-  {name:'Carlos Hernández',since:'Ene 2024',orders:12,total:38400,color:'#00e5ff',letter:'C'},
-  {name:'TechSeguridad SA',since:'Mar 2023',orders:28,total:142000,color:'#7c4dff',letter:'T'},
-  {name:'María González',since:'Jun 2024',orders:6,total:14200,color:'#ff3d57',letter:'M'},
-  {name:'Roberto Vega',since:'Oct 2024',orders:4,total:9800,color:'#00e676',letter:'R'},
-  {name:'Construmax MX',since:'Feb 2025',orders:9,total:61000,color:'#ffd600',letter:'C'},
-  {name:'Servicios Robles',since:'Nov 2024',orders:3,total:7400,color:'#ff6b35',letter:'S'},
+let clients = [
+  {id:1, name:'Público General', phone:'', email:'', address:'', rfc:'', notes:'Cliente genérico para ventas rápidas', since:'Ene 2024', color:'#555e72', letter:'PG', general:true},
+  {id:2, name:'Carlos Hernández', phone:'866 123 4567', email:'carlos@email.com', address:'Calle Morelos 45, Frontera Coah.', rfc:'HECC850101', notes:'Cliente frecuente, paga puntual', since:'Ene 2024', color:'#00e5ff', letter:'CH', general:false},
+  {id:3, name:'TechSeguridad SA', phone:'866 987 6543', email:'ventas@techseg.com', address:'Blvd. Industrial 200, Monclova', rfc:'TSA200301', notes:'Empresa, requiere factura siempre', since:'Mar 2023', color:'#7c4dff', letter:'TS', general:false},
+  {id:4, name:'María González', phone:'866 456 7890', email:'mgonzalez@gmail.com', address:'Col. Centro, Frontera Coah.', rfc:'', notes:'', since:'Jun 2024', color:'#ff3d57', letter:'MG', general:false},
+  {id:5, name:'Roberto Vega', phone:'866 321 0987', email:'', address:'', rfc:'', notes:'', since:'Oct 2024', color:'#00e676', letter:'RV', general:false},
+  {id:6, name:'Construmax MX', phone:'866 654 3210', email:'compras@construmax.mx', address:'Parque Industrial Norte', rfc:'CMX150601', notes:'Pagos a 30 días', since:'Feb 2025', color:'#ffd600', letter:'CM', general:false},
+];
+let nextClientId = 7;
+
+// ── EMPLEADOS & CAJAS ──
+const DEFAULT_PERMS = {
+  dashboard: true, pos: true, orders: true,
+  inventory: false, clients: true, clients_edit: false,
+  reports: false, employees: false, change_pass: false, manage_admins: false
+};
+const ADMIN_PERMS = {
+  dashboard:true, pos:true, orders:true, inventory:true,
+  clients:true, clients_edit:true, reports:true, employees:true,
+  change_pass:true, manage_admins:true
+};
+const PERM_LABELS = {
+  dashboard:'Ver Dashboard', pos:'Punto de Venta (cobrar)', orders:'Ver Órdenes',
+  inventory:'Gestionar Inventario', clients:'Ver Clientes', clients_edit:'Agregar/Editar Clientes',
+  reports:'Ver Reportes de Caja', employees:'Gestionar Empleados',
+  change_pass:'Cambiar su contraseña', manage_admins:'Agregar/Quitar Empleados'
+};
+
+let employees = [
+  {id:1, name:'Administrador', user:'admin', pass:'1234', role:'admin', caja:'Caja 1', turno:'Completo 8am-6pm', color:'#00e5ff', active:true, perms:{...ADMIN_PERMS}},
+  {id:2, name:'Juan Pérez', user:'cajero1', pass:'1234', role:'cajero', caja:'Caja 2', turno:'Matutino 8am-2pm', color:'#00e676', active:true, perms:{...DEFAULT_PERMS, pos:true}},
+  {id:3, name:'Ana López', user:'cajero2', pass:'5678', role:'cajero', caja:'Caja 3', turno:'Vespertino 2pm-8pm', color:'#ff9500', active:true, perms:{...DEFAULT_PERMS, pos:true}},
+];
+let nextEmployeeId = 4;
+
+// Historial de actividad
+let activityLog = [
+  {time:'06/Mar/2026 08:00', user:'admin', name:'Administrador', action:'login', detail:'Inicio de sesión', icon:'🔑'},
+  {time:'06/Mar/2026 08:15', user:'cajero1', name:'Juan Pérez', action:'login', detail:'Inicio de sesión', icon:'🔑'},
+  {time:'06/Mar/2026 10:23', user:'admin', name:'Administrador', action:'sale', detail:'Venta #001234 — $3,700', icon:'💰'},
+  {time:'06/Mar/2026 11:45', user:'cajero1', name:'Juan Pérez', action:'sale', detail:'Venta #001233 — $12,900', icon:'💰'},
+];
+
+let cajas = [
+  {id:1, name:'Caja 1', open:true, apertura:'08:00', fondoInicio:500, totalVentas:18450, cierre:null},
+  {id:2, name:'Caja 2', open:true, apertura:'08:15', fondoInicio:300, totalVentas:8200, cierre:null},
+  {id:3, name:'Caja 3', open:false, apertura:null, fondoInicio:0, totalVentas:0, cierre:'14:00'},
+];
+let nextCajaId = 4;
+
+// Órdenes extendidas con caja y empleado
+const ordersExtended = [
+  {id:'#001234', client:'Carlos Hernández', products:'Cámara IP 4K x2', pay:'Tarjeta', total:3700, status:'paid', date:'06/Mar/2026', hour:'10:23', employee:'Administrador', caja:'Caja 1'},
+  {id:'#001233', client:'TechSeguridad SA', products:'Kit 8 Cámaras', pay:'Transferencia', total:12900, status:'paid', date:'05/Mar/2026', hour:'11:45', employee:'Juan Pérez', caja:'Caja 2'},
+  {id:'#001232', client:'María González', products:'NVR 8Ch + Cables', pay:'Efectivo', total:5350, status:'pending', date:'05/Mar/2026', hour:'14:30', employee:'Ana López', caja:'Caja 3'},
+  {id:'#001231', client:'Roberto Vega', products:'DVR 16Ch', pay:'Tarjeta', total:3100, status:'paid', date:'04/Mar/2026', hour:'09:15', employee:'Juan Pérez', caja:'Caja 2'},
+  {id:'#001230', client:'Construmax MX', products:'Kit 4 Cámaras', pay:'Crédito', total:6800, status:'cancelled', date:'03/Mar/2026', hour:'16:00', employee:'Administrador', caja:'Caja 1'},
 ];
 
 // ── STATE ──
 let currentUser = null;
+let currentEmployee = null;
 let cart = [];
 let quoteCart = [];
 let payMethod = 'Efectivo';
@@ -842,47 +1262,81 @@ function setLoginTab(role) {
 function doLogin() {
   const u = document.getElementById('login-user').value.trim().toLowerCase();
   const p = document.getElementById('login-pass').value;
-  if((u==='admin'||u==='administrador') && p==='1234') { currentUser='admin'; initApp(); }
-  else if((u==='cliente'||u==='client') && p==='1234') { currentUser='client'; initApp(); }
-  else showToast('❌ Credenciales incorrectas');
+  // Check employee list first
+  const emp = employees.find(e=>e.user.toLowerCase()===u && e.pass===p && e.active);
+  if(emp) {
+    currentEmployee = emp;
+    currentUser = emp.role==='admin' ? 'admin' : 'employee';
+    logActivity(emp, 'login', 'Inicio de sesión', '🔑');
+    initApp(); return;
+  }
+  // Legacy client login
+  if((u==='cliente'||u==='client') && p==='1234') { currentUser='client'; currentEmployee=null; initApp(); return; }
+  showToast('❌ Credenciales incorrectas o usuario inactivo');
 }
 
-function logout() { currentUser=null; cart=[]; quoteCart=[];
+function logout() {
+  if(currentEmployee) logActivity(currentEmployee, 'logout', 'Cierre de sesión', '🚪');
+  currentUser=null; currentEmployee=null; cart=[]; quoteCart=[];
   document.getElementById('login-screen').style.display='flex';
-  document.getElementById('app').style.display='none'; }
+  document.getElementById('app').style.display='none';
+}
+
+function hasPerm(perm) {
+  if(!currentEmployee) return currentUser==='admin';
+  return !!currentEmployee.perms[perm];
+}
+
+function logActivity(emp, action, detail, icon='📌') {
+  const now = new Date().toLocaleString('es-MX',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  activityLog.unshift({time:now, user:emp.user, name:emp.name, action, detail, icon});
+  if(activityLog.length>200) activityLog.pop();
+}
 
 // ── INIT ──
 function initApp() {
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
-  const isAdmin = currentUser==='admin';
-  document.getElementById('sidebar-role').textContent = isAdmin?'Admin Panel':'Portal Cliente';
-  document.getElementById('user-avatar').textContent = isAdmin?'A':'C';
+  const isAdmin = currentUser==='admin' || currentUser==='employee';
+  const emp = currentEmployee;
+  document.getElementById('sidebar-role').textContent = isAdmin ? (emp?emp.caja:'Admin Panel') : 'Portal Cliente';
+  document.getElementById('user-avatar').textContent = emp ? emp.name[0].toUpperCase() : (isAdmin?'A':'C');
   document.getElementById('user-avatar').className = 'avatar '+(isAdmin?'admin':'client');
-  document.getElementById('user-name').textContent = isAdmin?'Administrador':'Carlos Hernández';
-  document.getElementById('user-role').textContent = isAdmin?'Super Admin':'Cliente Frecuente';
+  document.getElementById('user-name').textContent = emp ? emp.name : (isAdmin?'Administrador':'Cliente');
+  document.getElementById('user-role').textContent = emp ? (emp.role==='admin'?'Super Admin':emp.role==='supervisor'?'Supervisor':'Cajero') : (isAdmin?'Admin':'Cliente');
   buildNav(isAdmin);
-  if(isAdmin) { buildDashboard(); buildPOS(); buildInventory(); buildOrders(); buildClients(); navigate('dashboard'); }
-  else { buildCatalog(); buildMyOrders(); navigate('catalog'); }
+  if(isAdmin) {
+    if(hasPerm('dashboard')) buildDashboard();
+    if(hasPerm('pos')) buildPOS();
+    if(hasPerm('inventory')) buildInventory();
+    if(hasPerm('orders')) buildOrders();
+    if(hasPerm('clients')) { buildClients(); updateCartClientSelect(); }
+    buildEmployees(); buildReports(); buildNotifications(); navigate(hasPerm('dashboard')?'dashboard':hasPerm('pos')?'pos':'orders');
+  } else { buildCatalog(); buildMyOrders(); navigate('catalog'); }
 }
 
 function buildNav(isAdmin) {
-  const adminNav = `
-    <div class="nav-section">Principal</div>
-    <div class="nav-item" onclick="navigate('dashboard')"><span class="nav-icon">📊</span>Dashboard</div>
-    <div class="nav-item" onclick="navigate('pos')"><span class="nav-icon">🛒</span>Punto de Venta</div>
-    <div class="nav-section">Gestión</div>
-    <div class="nav-item" onclick="navigate('orders')"><span class="nav-icon">📋</span>Órdenes<span class="badge">24</span></div>
-    <div class="nav-item" onclick="navigate('inventory')"><span class="nav-icon">📦</span>Inventario</div>
-    <div class="nav-item" onclick="navigate('clients')"><span class="nav-icon">👥</span>Clientes</div>
-  `;
-  const clientNav = `
-    <div class="nav-section">Mi Cuenta</div>
-    <div class="nav-item" onclick="navigate('catalog')"><span class="nav-icon">🛍️</span>Catálogo</div>
-    <div class="nav-item" onclick="navigate('mypedidos')"><span class="nav-icon">📦</span>Mis Pedidos</div>
-    <div class="nav-item" onclick="navigate('support')"><span class="nav-icon">💬</span>Soporte</div>
-  `;
-  document.getElementById('nav-menu').innerHTML = isAdmin?adminNav:clientNav;
+  if(!isAdmin) {
+    document.getElementById('nav-menu').innerHTML = `
+      <div class="nav-section">Mi Cuenta</div>
+      <div class="nav-item" onclick="navigate('catalog')"><span class="nav-icon">🛍️</span>Catálogo</div>
+      <div class="nav-item" onclick="navigate('mypedidos')"><span class="nav-icon">📦</span>Mis Pedidos</div>
+      <div class="nav-item" onclick="navigate('support')"><span class="nav-icon">💬</span>Soporte</div>`;
+    return;
+  }
+  let nav = '<div class="nav-section">Principal</div>';
+  if(hasPerm('dashboard')) nav+=`<div class="nav-item" onclick="navigate('dashboard')"><span class="nav-icon">📊</span>Dashboard</div>`;
+  if(hasPerm('pos'))       nav+=`<div class="nav-item" onclick="navigate('pos')"><span class="nav-icon">🛒</span>Punto de Venta</div>`;
+  nav += '<div class="nav-section">Gestión</div>';
+  if(hasPerm('orders'))    nav+=`<div class="nav-item" onclick="navigate('orders')"><span class="nav-icon">📋</span>Órdenes</div>`;
+  if(hasPerm('orders'))    nav+=`<div class="nav-item" onclick="navigate('quotes');buildQuotes()"><span class="nav-icon">📄</span>Cotizaciones</div>`;
+  if(hasPerm('inventory')) nav+=`<div class="nav-item" onclick="navigate('inventory')"><span class="nav-icon">📦</span>Inventario</div>`;
+  if(hasPerm('clients'))   nav+=`<div class="nav-item" onclick="navigate('clients')"><span class="nav-icon">👥</span>Clientes</div>`;
+  nav += '<div class="nav-section">Administración</div>';
+  if(hasPerm('reports'))   nav+=`<div class="nav-item" onclick="navigate('reports')"><span class="nav-icon">📈</span>Reportes de Caja</div>`;
+  if(hasPerm('employees')) nav+=`<div class="nav-item" onclick="navigate('employees')"><span class="nav-icon">🧑‍💼</span>Empleados</div>`;
+  if(hasPerm('employees')) nav+=`<div class="nav-item" onclick="navigate('activity');buildActivity()"><span class="nav-icon">📜</span>Historial</div>`;
+  document.getElementById('nav-menu').innerHTML = nav;
 }
 
 function navigate(page) {
@@ -890,7 +1344,7 @@ function navigate(page) {
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const p = document.getElementById('page-'+page);
   if(p) p.classList.add('active');
-  const titles = {dashboard:'📊 Dashboard',pos:'🛒 Punto de Venta',inventory:'📦 Inventario',orders:'📋 Órdenes',clients:'👥 Clientes',catalog:'🛍️ Catálogo CCTV',mypedidos:'📦 Mis Pedidos',support:'💬 Soporte'};
+  const titles = {dashboard:'📊 Dashboard',pos:'🛒 Punto de Venta',inventory:'📦 Inventario',orders:'📋 Órdenes',clients:'👥 Clientes',catalog:'🛍️ Catálogo CCTV',mypedidos:'📦 Mis Pedidos',support:'💬 Soporte',reports:'📈 Reportes de Caja',employees:'🧑‍💼 Empleados',activity:'📜 Historial de Actividad',quotes:'📄 Cotizaciones'};
   document.getElementById('page-title').textContent = titles[page]||page;
   document.querySelectorAll('.nav-item').forEach(n=>{if(n.textContent.trim().toLowerCase().includes(page.replace('my','mis').replace('pedidos','pedidos')||page)) n.classList.add('active');});
 }
@@ -980,6 +1434,7 @@ function checkout() {
   const client = document.getElementById('cart-client').value||'Cliente General';
   const sub = cart.reduce((a,i)=>a+i.price*i.qty,0);
   orders.unshift({id:`#00${1234+orders.length+1}`,client,products:`${cart.length} producto(s)`,pay:payMethod,total:Math.round(sub*1.16),status:'paid',date:'Hoy'});
+  if(currentEmployee) logActivity(currentEmployee,'sale',`Venta $${Math.round(sub*1.16).toLocaleString()} — Cliente: ${client}`,'💰');
   showToast(`💳 Venta de $${Math.round(sub*1.16).toLocaleString()} procesada exitosamente`);
   cart=[]; renderCart();
   setTimeout(()=>{ buildOrders(); },100);
@@ -1174,6 +1629,7 @@ function saveProduct() {
       active: true, type: itemType, priceHistory:[],
     });
     priceHistory.unshift({product:name, oldPrice:0, newPrice, date:now, note:'Producto creado'});
+    if(currentEmployee) logActivity(currentEmployee,'inventory',`Agregó producto: ${name}`,'📦');
     showToast(`✅ "${name}" agregado al inventario`);
   }
   closeModal();
@@ -1258,34 +1714,255 @@ function renderPriceHistory() {
 function clearHistory() { priceHistory=[]; renderPriceHistory(); showToast('🗑️ Historial limpiado'); }
 
 // ── ORDERS ──
-function buildOrders() {
-  document.getElementById('orders-table').innerHTML = orders.map(o=>`<tr>
+function buildOrders() { filterOrders(); }
+
+function filterOrders() {
+  const q = (document.getElementById('ord-search')?.value||'').toLowerCase();
+  const status = document.getElementById('ord-status')?.value||'';
+  const dateF = document.getElementById('ord-date')?.value||'';
+
+  // Simple date filter based on date string keywords
+  const dateMatch = (date) => {
+    if(!dateF) return true;
+    const d = date.toLowerCase();
+    if(dateF==='today') return d.includes('hoy') || d.includes('06/mar') || d.includes('06/mar/2026');
+    if(dateF==='week')  return d.includes('hoy') || d.includes('06/mar') || d.includes('05/mar') || d.includes('04/mar');
+    if(dateF==='month') return true; // all demo data is within month
+    return true;
+  };
+
+  const list = orders.filter(o=>
+    (!q || o.id.toLowerCase().includes(q) || o.client.toLowerCase().includes(q) || o.products.toLowerCase().includes(q)) &&
+    (!status || o.status===status) &&
+    dateMatch(o.date)
+  );
+  renderOrdersTable(list);
+}
+
+function renderOrdersTable(list) {
+  document.getElementById('orders-table').innerHTML = list.map(o=>`<tr>
     <td style="font-family:'Rajdhani',sans-serif;font-weight:700;color:var(--accent)">${o.id}</td>
     <td>${o.client}</td>
-    <td style="color:var(--text2)">${o.products}</td>
+    <td style="color:var(--text2);max-width:160px">${o.products}</td>
     <td style="color:var(--text2)">${o.pay}</td>
     <td style="font-family:'Rajdhani',sans-serif;font-weight:700">$${o.total.toLocaleString()}</td>
-    <td><span class="status ${o.status}">${o.status==='paid'?'Pagado':o.status==='pending'?'Pendiente':'Cancelado'}</span></td>
+    <td>
+      <select onchange="changeOrderStatus('${o.id}',this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;color:${o.status==='paid'?'var(--green)':o.status==='pending'?'var(--yellow)':'var(--accent2)'};cursor:pointer;outline:none">
+        <option value="paid"   ${o.status==='paid'?'selected':''}>✅ Pagado</option>
+        <option value="pending"${o.status==='pending'?'selected':''}>⏳ Pendiente</option>
+        <option value="cancelled"${o.status==='cancelled'?'selected':''}>❌ Cancelado</option>
+      </select>
+    </td>
     <td style="color:var(--text2)">${o.date}</td>
-  </tr>`).join('');
+    <td>
+      ${o.changedBy
+        ? `<div style="font-size:11px;color:var(--text2)">✏️ ${o.changedBy}</div>
+           <div style="font-size:10px;color:var(--text3)">${o.changedAt||''}</div>`
+        : `<span style="font-size:11px;color:var(--text3)">—</span>`}
+    </td>
+    <td>
+      <button onclick="deleteOrder('${o.id}')" style="padding:5px 8px;border-radius:5px;border:none;background:rgba(255,61,87,0.15);color:var(--accent2);cursor:pointer;font-size:12px">🗑️</button>
+    </td>
+  </tr>`).join('') || `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:30px">No se encontraron órdenes</td></tr>`;
+}
+
+function changeOrderStatus(id, newStatus) {
+  const o = orders.find(x=>x.id===id);
+  if(!o) return;
+  const old = o.status;
+  o.status = newStatus;
+  const label = {paid:'Pagado', pending:'Pendiente', cancelled:'Cancelado'};
+  const now = new Date().toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  const who = currentEmployee ? currentEmployee.name : 'Admin';
+  o.changedBy = who;
+  o.changedAt = now;
+  if(currentEmployee) logActivity(currentEmployee,'sale',`Orden ${id}: ${label[old]} → ${label[newStatus]}`,'📋');
+  filterOrders();
+  showToast(`✅ Orden ${id} → ${label[newStatus]}`);
+}
+
+function deleteOrder(id) {
+  if(!confirm(`¿Eliminar la orden ${id}? Esta acción no se puede deshacer.`)) return;
+  const idx = orders.findIndex(o=>o.id===id);
+  if(idx>-1) { orders.splice(idx,1); filterOrders(); showToast(`🗑️ Orden ${id} eliminada`); }
 }
 
 // ── CLIENTS ──
-function buildClients() {
-  document.getElementById('clients-grid').innerHTML = clients.map(c=>`
-    <div class="client-card">
+let deleteClientTargetId = null;
+
+const clientColors = ['#00e5ff','#7c4dff','#ff3d57','#00e676','#ffd600','#ff6b35','#e040fb','#40c4ff','#69f0ae','#ffab40'];
+
+function getClientOrderStats(name) {
+  const clientOrders = orders.filter(o=>o.client===name);
+  return {
+    count: clientOrders.length,
+    total: clientOrders.reduce((a,o)=>a+o.total,0)
+  };
+}
+
+function filterClients() {
+  const q = (document.getElementById('client-search')?.value||'').toLowerCase();
+  const list = q ? clients.filter(c=>
+    c.name.toLowerCase().includes(q) ||
+    c.phone.includes(q) ||
+    (c.email||'').toLowerCase().includes(q)
+  ) : clients;
+  renderClientsGrid(list);
+}
+
+function buildClients() { renderClientsGrid(clients); }
+
+function renderClientsGrid(list) {
+  document.getElementById('clients-grid').innerHTML = list.map(c=>{
+    const stats = getClientOrderStats(c.name);
+    return `
+    <div class="client-card ${c.general?'general-card':''}">
+      ${c.general?'<div style="position:absolute;top:10px;right:10px;font-size:10px;color:var(--text3);background:var(--surface2);padding:2px 8px;border-radius:10px">GENERAL</div>':''}
       <div class="client-header">
         <div class="client-avatar" style="background:${c.color}22;color:${c.color}">${c.letter}</div>
-        <div>
+        <div style="flex:1;min-width:0">
           <div class="client-name">${c.name}</div>
           <div class="client-since">Cliente desde ${c.since}</div>
         </div>
       </div>
-      <div class="client-stats">
-        <div class="client-stat"><strong style="color:${c.color}">${c.orders}</strong><small>Órdenes</small></div>
-        <div class="client-stat"><strong style="color:var(--accent)">$${(c.total/1000).toFixed(0)}k</strong><small>Total</small></div>
+      <div style="margin-bottom:10px">
+        ${c.phone?`<div class="client-info-row">📱 <span>${c.phone}</span></div>`:''}
+        ${c.email?`<div class="client-info-row">✉️ <span>${c.email}</span></div>`:''}
+        ${c.address?`<div class="client-info-row">📍 <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.address}</span></div>`:''}
+        ${c.rfc?`<div class="client-info-row">🧾 <span style="font-family:'Rajdhani',sans-serif">${c.rfc}</span></div>`:''}
       </div>
-    </div>`).join('');
+      <div class="client-stats">
+        <div class="client-stat"><strong style="color:${c.color}">${stats.count}</strong><small>Órdenes</small></div>
+        <div class="client-stat"><strong style="color:var(--accent)">$${stats.total>=1000?(stats.total/1000).toFixed(0)+'k':stats.total.toLocaleString()}</strong><small>Total</small></div>
+      </div>
+      ${c.notes?`<div style="margin:8px 0;padding:8px;background:rgba(255,214,0,0.06);border-radius:6px;font-size:11px;color:var(--text2)">💬 ${c.notes}</div>`:''}
+      ${!c.general?`
+      <div class="client-actions" style="margin-top:10px">
+        <button class="btn-primary btn-sm" style="flex:1" onclick="openClientDetail(${c.id})">👁️ Ver</button>
+        <button class="btn-sm" onclick="openClientModal(${c.id})" style="flex:1;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;font-size:12px">✏️ Editar</button>
+        <button class="btn-sm" onclick="openDeleteClientModal(${c.id})" style="padding:6px 10px;border-radius:6px;border:none;background:rgba(255,61,87,0.15);color:var(--accent2);cursor:pointer;font-size:12px">🗑️</button>
+      </div>`:''}
+    </div>`;
+  }).join('') || `<div style="grid-column:1/-1;text-align:center;color:var(--text3);padding:40px">No se encontraron clientes</div>`;
+}
+
+// ── MODAL CLIENTE ──
+function openClientModal(id) {
+  document.getElementById('cm-id').value = id||'';
+  if(id) {
+    const c = clients.find(x=>x.id===id);
+    document.getElementById('client-modal-title').textContent = '✏️ Editar Cliente';
+    document.getElementById('cm-name').value = c.name;
+    document.getElementById('cm-phone').value = c.phone;
+    document.getElementById('cm-email').value = c.email||'';
+    document.getElementById('cm-address').value = c.address||'';
+    document.getElementById('cm-rfc').value = c.rfc||'';
+    document.getElementById('cm-notes').value = c.notes||'';
+  } else {
+    document.getElementById('client-modal-title').textContent = '👤 Nuevo Cliente';
+    ['cm-name','cm-phone','cm-email','cm-address','cm-rfc','cm-notes'].forEach(f=>document.getElementById(f).value='');
+  }
+  document.getElementById('client-modal').classList.add('open');
+}
+function closeClientModal() { document.getElementById('client-modal').classList.remove('open'); }
+
+function saveClient() {
+  const name = document.getElementById('cm-name').value.trim();
+  const phone = document.getElementById('cm-phone').value.trim();
+  if(!name) { showToast('❌ Ingresa el nombre del cliente'); return; }
+  if(!phone) { showToast('❌ Ingresa el teléfono'); return; }
+  const id = parseInt(document.getElementById('cm-id').value)||null;
+  if(id) {
+    const c = clients.find(x=>x.id===id);
+    c.name = name; c.phone = phone;
+    c.email = document.getElementById('cm-email').value.trim();
+    c.address = document.getElementById('cm-address').value.trim();
+    c.rfc = document.getElementById('cm-rfc').value.trim().toUpperCase();
+    c.notes = document.getElementById('cm-notes').value.trim();
+    c.letter = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    showToast(`✅ "${name}" actualizado`);
+  } else {
+    const color = clientColors[clients.length % clientColors.length];
+    clients.push({
+      id: nextClientId++, name, phone,
+      email: document.getElementById('cm-email').value.trim(),
+      address: document.getElementById('cm-address').value.trim(),
+      rfc: document.getElementById('cm-rfc').value.trim().toUpperCase(),
+      notes: document.getElementById('cm-notes').value.trim(),
+      since: new Date().toLocaleDateString('es-MX',{month:'short',year:'numeric'}),
+      color, letter: name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(),
+      general: false,
+    });
+    showToast(`✅ "${name}" agregado`);
+  }
+  closeClientModal();
+  buildClients();
+  updateCartClientSelect();
+}
+
+function updateCartClientSelect() {
+  const sel = document.getElementById('cart-client');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = clients.map(c=>`<option value="${c.name}">${c.general?'👥 ':''} ${c.name}</option>`).join('');
+  sel.value = cur || clients[0].name;
+}
+
+// ── DETALLE CLIENTE ──
+function openClientDetail(id) {
+  const c = clients.find(x=>x.id===id);
+  const stats = getClientOrderStats(c.name);
+  const clientOrders = orders.filter(o=>o.client===c.name);
+  document.getElementById('client-detail-content').innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+      <div class="client-avatar" style="width:56px;height:56px;font-size:22px;background:${c.color}22;color:${c.color}">${c.letter}</div>
+      <div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700">${c.name}</div>
+        <div style="font-size:12px;color:var(--text2)">Cliente desde ${c.since}</div>
+      </div>
+      <button onclick="openClientModal(${c.id});closeClientDetailModal();" style="margin-left:auto;padding:8px 14px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:12px">✏️ Editar</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      ${c.phone?`<div style="padding:10px;background:var(--surface2);border-radius:8px;font-size:13px">📱 ${c.phone}</div>`:''}
+      ${c.email?`<div style="padding:10px;background:var(--surface2);border-radius:8px;font-size:13px">✉️ ${c.email}</div>`:''}
+      ${c.address?`<div style="padding:10px;background:var(--surface2);border-radius:8px;font-size:13px;grid-column:1/-1">📍 ${c.address}</div>`:''}
+      ${c.rfc?`<div style="padding:10px;background:var(--surface2);border-radius:8px;font-size:13px">🧾 RFC: ${c.rfc}</div>`:''}
+      ${c.notes?`<div style="padding:10px;background:rgba(255,214,0,0.06);border-radius:8px;font-size:13px;grid-column:1/-1">💬 ${c.notes}</div>`:''}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <div class="client-stat"><strong style="color:${c.color}">${stats.count}</strong><small>Órdenes totales</small></div>
+      <div class="client-stat"><strong style="color:var(--accent)">$${stats.total.toLocaleString()}</strong><small>Compras totales</small></div>
+    </div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">Historial de compras:</div>
+    ${clientOrders.length ? `
+    <table class="table" style="font-size:12px">
+      <thead><tr><th>#</th><th>Productos</th><th>Total</th><th>Estado</th><th>Fecha</th></tr></thead>
+      <tbody>${clientOrders.map(o=>`<tr>
+        <td style="color:var(--accent);font-family:'Rajdhani',sans-serif">${o.id}</td>
+        <td style="color:var(--text2)">${o.products}</td>
+        <td style="font-family:'Rajdhani',sans-serif;font-weight:700">$${o.total.toLocaleString()}</td>
+        <td><span class="status ${o.status}">${o.status==='paid'?'Pagado':o.status==='pending'?'Pendiente':'Cancelado'}</span></td>
+        <td style="color:var(--text2)">${o.date}</td>
+      </tr>`).join('')}</tbody>
+    </table>` : `<div style="text-align:center;color:var(--text3);padding:20px;font-size:13px">Sin órdenes registradas</div>`}
+  `;
+  document.getElementById('client-detail-modal').classList.add('open');
+}
+function closeClientDetailModal() { document.getElementById('client-detail-modal').classList.remove('open'); }
+
+// ── ELIMINAR CLIENTE ──
+function openDeleteClientModal(id) {
+  deleteClientTargetId = id;
+  const c = clients.find(x=>x.id===id);
+  document.getElementById('delete-client-name').textContent = `${c.name}`;
+  document.getElementById('delete-client-modal').classList.add('open');
+}
+function closeDeleteClientModal() { document.getElementById('delete-client-modal').classList.remove('open'); deleteClientTargetId=null; }
+function confirmDeleteClient() {
+  const c = clients.find(x=>x.id===deleteClientTargetId);
+  clients = clients.filter(x=>x.id!==deleteClientTargetId);
+  closeDeleteClientModal(); buildClients(); updateCartClientSelect();
+  showToast(`🗑️ "${c.name}" eliminado`);
 }
 
 // ── CATALOG ──
@@ -1350,7 +2027,681 @@ function buildMyOrders() {
   </tr>`).join('');
 }
 
-// ── TOAST ──
+// ── EMPLOYEES ──
+const empColors = ['#00e5ff','#00e676','#ff9500','#7c4dff','#ff3d57','#e040fb','#40c4ff'];
+const roleLabel = {admin:'👑 Admin', supervisor:'🔑 Supervisor', cajero:'💼 Cajero'};
+let deleteEmpTargetId = null;
+
+function filterEmployees() {
+  const q = (document.getElementById('emp-search')?.value||'').toLowerCase();
+  const list = q ? employees.filter(e=>e.name.toLowerCase().includes(q)||e.user.toLowerCase().includes(q)) : employees;
+  renderEmployeesGrid(list);
+}
+
+function buildEmployees() { renderEmployeesGrid(employees); }
+
+function renderEmployeesGrid(list) {
+  document.getElementById('employees-grid').innerHTML = list.map(e=>`
+    <div class="client-card" style="opacity:${e.active?1:0.5}">
+      <div class="client-header">
+        <div class="client-avatar" style="background:${e.color}22;color:${e.color}">${e.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
+        <div style="flex:1">
+          <div class="client-name">${e.name}</div>
+          <div style="font-size:11px;color:var(--text2)">${roleLabel[e.role]||e.role}</div>
+        </div>
+        <span class="status ${e.active?'paid':'cancelled'}">${e.active?'Activo':'Inactivo'}</span>
+      </div>
+      <div style="margin-bottom:12px">
+        <div class="client-info-row">👤 <span style="font-family:'Rajdhani',sans-serif">${e.user}</span></div>
+        <div class="client-info-row">🔑 <span>${'•'.repeat(e.pass.length)}</span></div>
+        <div class="client-info-row">🏧 <span>${e.caja}</span></div>
+        <div class="client-info-row">🕐 <span>${e.turno||'—'}</span></div>
+      </div>
+      <div class="client-actions">
+        <button class="btn-primary btn-sm" style="flex:1" onclick="openEmployeeModal(${e.id})">✏️ Editar</button>
+        ${e.id!==1?`<button class="btn-sm" onclick="toggleEmployee(${e.id})" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:${e.active?'var(--yellow)':'var(--green)'};cursor:pointer;font-size:12px">${e.active?'⛔':'✅'}</button>
+        <button class="btn-sm" onclick="askDeleteEmployee(${e.id})" style="padding:6px 10px;border-radius:6px;border:none;background:rgba(255,61,87,0.15);color:var(--accent2);cursor:pointer;font-size:12px">🗑️</button>`:''}
+      </div>
+    </div>`).join('') || `<div style="grid-column:1/-1;text-align:center;color:var(--text3);padding:40px">No se encontraron empleados</div>`;
+}
+
+function renderPermsGrid(perms) {
+  document.getElementById('em-perms-grid').innerHTML = Object.entries(PERM_LABELS).map(([key,label])=>`
+    <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border-radius:7px;cursor:pointer;font-size:12px">
+      <input type="checkbox" id="perm-${key}" ${perms[key]?'checked':''} style="width:14px;height:14px;accent-color:var(--accent)">
+      ${label}
+    </label>`).join('');
+}
+
+function setAllPerms(val) {
+  Object.keys(PERM_LABELS).forEach(k=>{ const el=document.getElementById(`perm-${k}`); if(el) el.checked=val; });
+}
+
+function getPermsFromForm() {
+  const perms={};
+  Object.keys(PERM_LABELS).forEach(k=>{ perms[k]=document.getElementById(`perm-${k}`)?.checked||false; });
+  return perms;
+}
+
+function openEmployeeModal(id) {
+  const cajaSelect = document.getElementById('em-caja');
+  cajaSelect.innerHTML = cajas.map(c=>`<option value="${c.name}">${c.name}</option>`).join('');
+  document.getElementById('em-id').value = id||'';
+  if(id) {
+    const e = employees.find(x=>x.id===id);
+    const isMe = currentEmployee && currentEmployee.id===id;
+    document.getElementById('emp-modal-title').textContent = '✏️ Editar Empleado';
+    document.getElementById('em-name').value = e.name;
+    document.getElementById('em-user').value = e.user;
+    // Only show real password if admin or if it's own account with change_pass perm
+    document.getElementById('em-pass').value = (hasPerm('manage_admins') || (isMe && hasPerm('change_pass'))) ? e.pass : '••••';
+    document.getElementById('em-pass').disabled = !(hasPerm('manage_admins') || (isMe && hasPerm('change_pass')));
+    document.getElementById('em-role').value = e.role;
+    document.getElementById('em-caja').value = e.caja;
+    document.getElementById('em-turno').value = e.turno||'';
+    document.getElementById('em-active').value = e.active.toString();
+    // Disable role/perms/active if not manage_admins
+    const canManage = hasPerm('manage_admins') && e.id!==1;
+    document.getElementById('em-role').disabled = !canManage;
+    document.getElementById('em-active').disabled = !canManage;
+    renderPermsGrid(e.perms||DEFAULT_PERMS);
+    document.querySelectorAll('#em-perms-grid input').forEach(cb=>cb.disabled=!canManage);
+    document.querySelectorAll('#em-perms-grid + div button').forEach(b=>b.disabled=!canManage);
+  } else {
+    document.getElementById('emp-modal-title').textContent = '🧑‍💼 Nuevo Empleado';
+    ['em-name','em-user','em-pass','em-turno'].forEach(f=>{ document.getElementById(f).value=''; document.getElementById(f).disabled=false; });
+    document.getElementById('em-role').value='cajero'; document.getElementById('em-role').disabled=false;
+    document.getElementById('em-active').value='true'; document.getElementById('em-active').disabled=false;
+    renderPermsGrid({...DEFAULT_PERMS});
+  }
+  document.getElementById('employee-modal').classList.add('open');
+}
+function closeEmployeeModal() { document.getElementById('employee-modal').classList.remove('open'); }
+
+function saveEmployee() {
+  const name = document.getElementById('em-name').value.trim();
+  const user = document.getElementById('em-user').value.trim();
+  const passEl = document.getElementById('em-pass');
+  const pass = passEl.disabled ? null : passEl.value.trim();
+  if(!name||!user) { showToast('❌ Nombre y usuario son requeridos'); return; }
+  if(pass!==null && !pass) { showToast('❌ La contraseña no puede estar vacía'); return; }
+  const id = parseInt(document.getElementById('em-id').value)||null;
+  const color = empColors[employees.length % empColors.length];
+  if(id) {
+    const e = employees.find(x=>x.id===id);
+    const oldName = e.name;
+    e.name=name; e.user=user;
+    if(pass!==null) e.pass=pass;
+    if(hasPerm('manage_admins') && e.id!==1) {
+      e.role=document.getElementById('em-role').value;
+      e.active=document.getElementById('em-active').value==='true';
+      e.perms=getPermsFromForm();
+    }
+    e.caja=document.getElementById('em-caja').value;
+    e.turno=document.getElementById('em-turno').value;
+    if(currentEmployee) logActivity(currentEmployee,'employee',`Editó empleado: ${name}`,'🧑‍💼');
+    showToast(`✅ "${name}" actualizado`);
+  } else {
+    if(!pass){showToast('❌ Ingresa una contraseña');return;}
+    const newEmp={id:nextEmployeeId++,name,user,pass,role:document.getElementById('em-role').value,caja:document.getElementById('em-caja').value,turno:document.getElementById('em-turno').value,active:true,color,perms:getPermsFromForm()};
+    employees.push(newEmp);
+    if(currentEmployee) logActivity(currentEmployee,'employee',`Agregó empleado: ${name}`,'🧑‍💼');
+    showToast(`✅ "${name}" agregado`);
+  }
+  closeEmployeeModal(); buildEmployees(); buildReports(); renderActivityLog(activityLog);
+}
+
+function toggleEmployee(id) {
+  const e = employees.find(x=>x.id===id);
+  e.active=!e.active; buildEmployees();
+  showToast(`${e.active?'✅ Activado':'⛔ Desactivado'}: ${e.name}`);
+}
+
+function askDeleteEmployee(id) {
+  deleteEmpTargetId=id;
+  const e=employees.find(x=>x.id===id);
+  document.getElementById('delete-emp-name').textContent=e.name;
+  document.getElementById('delete-emp-modal').classList.add('open');
+}
+function confirmDeleteEmployee() {
+  const e=employees.find(x=>x.id===deleteEmpTargetId);
+  employees=employees.filter(x=>x.id!==deleteEmpTargetId);
+  document.getElementById('delete-emp-modal').classList.remove('open');
+  buildEmployees(); showToast(`🗑️ "${e.name}" eliminado`);
+}
+
+// ── REPORTES ──
+function buildReports() {
+  // Populate caja select
+  const cajaSelect = document.getElementById('report-caja');
+  if(cajaSelect) {
+    cajaSelect.innerHTML = '<option value="all">Todas las cajas</option>' + cajas.map(c=>`<option value="${c.name}">${c.name}</option>`).join('');
+  }
+
+  const filterCaja = document.getElementById('report-caja')?.value||'all';
+  let data = ordersExtended.filter(o=>o.status!=='cancelled');
+  if(filterCaja!=='all') data=data.filter(o=>o.caja===filterCaja);
+
+  const totalVentas = data.reduce((a,o)=>a+o.total,0);
+  const totalOrdenes = data.length;
+  const ticketProm = totalOrdenes ? Math.round(totalVentas/totalOrdenes) : 0;
+  const totalCancelado = ordersExtended.filter(o=>o.status==='cancelled').reduce((a,o)=>a+o.total,0);
+
+  // Stats
+  document.getElementById('report-stats').innerHTML = `
+    <div class="stat-card cyan"><div class="stat-label">Total Ventas</div><div class="stat-value cyan">$${totalVentas.toLocaleString()}</div><div class="stat-change up">↑ Período seleccionado</div><div class="stat-icon">💰</div></div>
+    <div class="stat-card green"><div class="stat-label">Órdenes</div><div class="stat-value green">${totalOrdenes}</div><div class="stat-change up">Completadas</div><div class="stat-icon">📋</div></div>
+    <div class="stat-card purple"><div class="stat-label">Ticket Promedio</div><div class="stat-value purple">$${ticketProm.toLocaleString()}</div><div class="stat-change" style="color:var(--text2)">Por orden</div><div class="stat-icon">🧾</div></div>
+    <div class="stat-card red"><div class="stat-label">Cancelado</div><div class="stat-value red">$${totalCancelado.toLocaleString()}</div><div class="stat-change down">↓ No cobrado</div><div class="stat-icon">⚠️</div></div>
+  `;
+
+  // Por método de pago
+  const payGroups = {};
+  data.forEach(o=>{ payGroups[o.pay]=(payGroups[o.pay]||0)+o.total; });
+  const payMax = Math.max(...Object.values(payGroups),1);
+  document.getElementById('report-pay-methods').innerHTML = Object.entries(payGroups).map(([pay,total])=>`
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+        <span>${pay}</span><span style="font-family:'Rajdhani',sans-serif;font-weight:700;color:var(--accent)">$${total.toLocaleString()}</span>
+      </div>
+      <div style="height:6px;background:var(--surface3);border-radius:3px">
+        <div style="height:100%;width:${Math.round(total/payMax*100)}%;background:var(--accent);border-radius:3px;transition:width 0.5s"></div>
+      </div>
+    </div>`).join('') || '<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px">Sin datos</div>';
+
+  // Top productos (simulado desde nombres de órdenes)
+  const prodCount = {};
+  data.forEach(o=>{ const p=o.products.split(' x')[0]; prodCount[p]=(prodCount[p]||0)+1; });
+  const topProds = Object.entries(prodCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  document.getElementById('report-top-products').innerHTML = topProds.map(([name,count],i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <span style="font-family:'Rajdhani',sans-serif;font-size:18px;color:var(--text3);width:20px">${i+1}</span>
+      <span style="flex:1">${name}</span>
+      <span style="font-family:'Rajdhani',sans-serif;font-weight:700;color:var(--accent)">${count} venta${count>1?'s':''}</span>
+    </div>`).join('') || '<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px">Sin datos</div>';
+
+  // Por empleado
+  const empGroups = {};
+  data.forEach(o=>{ if(!empGroups[o.employee]) empGroups[o.employee]={total:0,count:0}; empGroups[o.employee].total+=o.total; empGroups[o.employee].count++; });
+  document.getElementById('report-by-employee').innerHTML = `
+    <table class="table">
+      <thead><tr><th>Empleado</th><th>Órdenes</th><th>Total Ventas</th><th>Ticket Prom.</th><th>Caja</th></tr></thead>
+      <tbody>${Object.entries(empGroups).map(([name,s])=>{
+        const emp=employees.find(e=>e.name===name);
+        return `<tr>
+          <td><div style="display:flex;align-items:center;gap:8px"><div style="width:28px;height:28px;border-radius:50%;background:${emp?emp.color+'22':'#ffffff22'};color:${emp?emp.color:'#fff'};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>${name}</div></td>
+          <td style="font-family:'Rajdhani',sans-serif;color:var(--text2)">${s.count}</td>
+          <td style="font-family:'Rajdhani',sans-serif;font-weight:700;color:var(--accent)">$${s.total.toLocaleString()}</td>
+          <td style="font-family:'Rajdhani',sans-serif;color:var(--text2)">$${Math.round(s.total/s.count).toLocaleString()}</td>
+          <td style="color:var(--text2)">${emp?emp.caja:'—'}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+
+  // Tabla detalle
+  document.getElementById('report-orders-table').innerHTML = data.map(o=>`<tr>
+    <td style="font-family:'Rajdhani',sans-serif;font-weight:700;color:var(--accent)">${o.id}</td>
+    <td>${o.client}</td>
+    <td style="color:var(--text2)">${o.employee}</td>
+    <td style="color:var(--text2)">${o.caja}</td>
+    <td style="color:var(--text2)">${o.pay}</td>
+    <td style="font-family:'Rajdhani',sans-serif;font-weight:700">$${o.total.toLocaleString()}</td>
+    <td><span class="status ${o.status}">${o.status==='paid'?'Pagado':'Pendiente'}</span></td>
+    <td style="color:var(--text2)">${o.hour}</td>
+  </tr>`).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:30px">Sin órdenes</td></tr>`;
+
+  // Estado de cajas
+  document.getElementById('cajas-status').innerHTML = cajas.map(c=>`
+    <div style="background:var(--surface);border:1px solid ${c.open?'rgba(0,230,118,0.3)':'var(--border)'};border-radius:10px;padding:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700">${c.name}</span>
+        <span class="status ${c.open?'paid':'cancelled'}">${c.open?'Abierta':'Cerrada'}</span>
+      </div>
+      ${c.open?`<div style="font-size:12px;color:var(--text2)">⏰ Apertura: ${c.apertura}</div><div style="font-size:12px;color:var(--text2)">💵 Fondo inicio: $${c.fondoInicio}</div><div style="font-size:13px;color:var(--accent);font-family:'Rajdhani',sans-serif;font-weight:700;margin-top:6px">Ventas: $${c.totalVentas.toLocaleString()}</div>`
+      :`<div style="font-size:12px;color:var(--text2)">⏰ Cierre: ${c.cierre}</div><div style="font-size:12px;color:var(--text3)">Sin actividad hoy</div>`}
+      <div style="display:flex;gap:6px;margin-top:10px">
+        ${c.open
+          ?`<button onclick="toggleCaja(${c.id})" style="flex:1;padding:7px;border-radius:6px;border:none;background:rgba(255,61,87,0.15);color:var(--accent2);cursor:pointer;font-size:12px;font-weight:600">🔒 Cerrar Caja</button>`
+          :`<button onclick="toggleCaja(${c.id})" style="flex:1;padding:7px;border-radius:6px;border:none;background:rgba(0,230,118,0.1);color:var(--green);cursor:pointer;font-size:12px;font-weight:600">🔓 Abrir Caja</button>`
+        }
+      </div>
+    </div>`).join('');
+}
+
+function toggleCaja(id) {
+  const c=cajas.find(x=>x.id===id);
+  const now=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  if(c.open) { c.open=false; c.cierre=now; if(currentEmployee) logActivity(currentEmployee,'caja',`Cerró ${c.name} a las ${now}`,'🔒'); showToast(`🔒 ${c.name} cerrada a las ${now}`); }
+  else { c.open=true; c.apertura=now; c.cierre=null; c.totalVentas=0; if(currentEmployee) logActivity(currentEmployee,'caja',`Abrió ${c.name} a las ${now}`,'🔓'); showToast(`🔓 ${c.name} abierta a las ${now}`); }
+  buildReports();
+}
+
+function openCajaModal() {
+  document.getElementById('cajas-list').innerHTML = cajas.map(c=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--surface2);border-radius:8px">
+      <span style="font-size:16px">${c.open?'🟢':'🔴'}</span>
+      <span style="flex:1;font-size:14px;font-weight:500">${c.name}</span>
+      <span style="font-size:12px;color:var(--text2)">${c.open?'Abierta':'Cerrada'}</span>
+      <button onclick="toggleCaja(${c.id});renderCajaModalList()" style="padding:5px 10px;border-radius:5px;border:none;background:${c.open?'rgba(255,61,87,0.15)':'rgba(0,230,118,0.1)'};color:${c.open?'var(--accent2)':'var(--green)'};cursor:pointer;font-size:11px">${c.open?'Cerrar':'Abrir'}</button>
+    </div>`).join('');
+  document.getElementById('caja-modal').classList.add('open');
+}
+function closeCajaModal() { document.getElementById('caja-modal').classList.remove('open'); }
+function renderCajaModalList() { openCajaModal(); }
+
+function addCaja() {
+  const name=document.getElementById('new-caja-name').value.trim();
+  if(!name){showToast('❌ Ingresa el nombre');return;}
+  cajas.push({id:nextCajaId++,name,open:false,apertura:null,fondoInicio:0,totalVentas:0,cierre:null});
+  document.getElementById('new-caja-name').value='';
+  openCajaModal(); buildReports(); buildEmployees();
+  showToast(`✅ "${name}" agregada`);
+}
+
+function printReport() {
+  const area = document.getElementById('report-print-area');
+  const win = window.open('','_blank');
+  win.document.write(`<html><head><title>Reporte de Caja — HJ Reparaciones y Más</title>
+  <style>body{font-family:sans-serif;padding:20px;color:#000}table{width:100%;border-collapse:collapse}th,td{padding:8px;border:1px solid #ddd;text-align:left}th{background:#f5f5f5}h2{color:#333}</style></head>
+  <body><h2>📈 Reporte de Caja — HJ Reparaciones y Más</h2><p>Fecha: ${new Date().toLocaleDateString('es-MX')}</p>${area.innerHTML}</body></html>`);
+  win.document.close();
+  win.print();
+}
+// ── NOTIFICACIONES ──
+let notifications = [];
+
+function buildNotifications() {
+  notifications = [];
+  const now = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  // Stock bajo
+  products.filter(p=>p.type==='product'&&p.active&&p.stock<=5).forEach(p=>{
+    notifications.push({id:`stock-${p.id}`,icon:'⚠️',title:`Stock bajo: ${p.name}`,desc:`Solo quedan ${p.stock} unidades`,type:'stock',read:false,action:()=>navigate('inventory')});
+  });
+  // Órdenes pendientes
+  const pending = orders.filter(o=>o.status==='pending');
+  if(pending.length) notifications.push({id:'pending-orders',icon:'⏳',title:`${pending.length} orden(es) pendiente(s) de pago`,desc:'Ve a Órdenes para actualizar',type:'order',read:false,action:()=>navigate('orders')});
+  // Nueva orden (última)
+  if(orders.length) {
+    const last = orders[0];
+    notifications.push({id:`neworder-${last.id}`,icon:'🛒',title:`Última orden: ${last.id}`,desc:`${last.client} — $${last.total.toLocaleString()}`,type:'order',read:false,action:()=>navigate('orders')});
+  }
+  // Cajas cerradas
+  cajas.filter(c=>!c.open).forEach(c=>{
+    notifications.push({id:`caja-${c.id}`,icon:'🔒',title:`${c.name} está cerrada`,desc:'Abre la caja para registrar ventas',type:'caja',read:false,action:()=>navigate('reports')});
+  });
+  // Empleados inactivos
+  const inactive = employees.filter(e=>!e.active&&e.id!==1);
+  if(inactive.length) notifications.push({id:'inactive-emp',icon:'👤',title:`${inactive.length} empleado(s) inactivo(s)`,desc:'Revisa el apartado de Empleados',type:'employee',read:false,action:()=>navigate('employees')});
+
+  renderNotifications();
+}
+
+function renderNotifications() {
+  const unread = notifications.filter(n=>!n.read).length;
+  const badge = document.getElementById('notif-badge');
+  if(badge) { badge.textContent=unread; badge.style.display=unread?'flex':'none'; }
+  const list = document.getElementById('notif-list');
+  if(!list) return;
+  if(!notifications.length) { list.innerHTML='<div style="text-align:center;color:var(--text3);padding:20px;font-size:13px">✅ Todo en orden, sin alertas</div>'; return; }
+  list.innerHTML = notifications.map(n=>`
+    <div class="notif-item ${n.read?'':'unread'}" onclick="readNotif('${n.id}')">
+      <div class="notif-icon">${n.icon}</div>
+      <div class="notif-text">
+        <strong>${n.title}</strong>
+        <small>${n.desc}</small>
+      </div>
+    </div>`).join('');
+}
+
+function toggleNotifPanel() {
+  const panel = document.getElementById('notif-panel');
+  panel.classList.toggle('open');
+  if(panel.classList.contains('open')) buildNotifications();
+}
+
+function readNotif(id) {
+  const n = notifications.find(x=>x.id===id);
+  if(n) { n.read=true; if(n.action) n.action(); }
+  document.getElementById('notif-panel').classList.remove('open');
+  renderNotifications();
+}
+
+function clearAllNotifs() {
+  notifications.forEach(n=>n.read=true);
+  renderNotifications();
+  document.getElementById('notif-panel').classList.remove('open');
+}
+
+// Close panel when clicking outside
+document.addEventListener('click', e=>{
+  const wrapper = document.getElementById('notif-wrapper');
+  if(wrapper && !wrapper.contains(e.target)) document.getElementById('notif-panel')?.classList.remove('open');
+});
+
+// ── COTIZACIONES ──
+let quotes = [
+  {id:'COT-001', client:'Carlos Hernández', phone:'866 123 4567', email:'carlos@email.com', address:'Calle Morelos 45', products:[{name:'Cámara IP 4K PoE Domo',price:1850,qty:2},{name:'NVR 8 Canales 4K',price:4500,qty:1}], notes:'Instalación no incluida. Precio sujeto a cambio.', vigencia:15, date:'06/Mar/2026', status:'sent'},
+  {id:'COT-002', client:'Construmax MX', phone:'866 654 3210', email:'compras@construmax.mx', address:'Parque Industrial Norte', products:[{name:'Kit 8 Cámaras + NVR',price:12900,qty:1}], notes:'', vigencia:30, date:'05/Mar/2026', status:'draft'},
+];
+let nextQuoteId = 3;
+let editingQuoteId = null;
+let quoteProducts = [];
+
+function buildQuotes() { filterQuotesList(); }
+
+function filterQuotesList() {
+  const q = (document.getElementById('quote-search')?.value||'').toLowerCase();
+  const list = q ? quotes.filter(x=>x.id.toLowerCase().includes(q)||x.client.toLowerCase().includes(q)) : quotes;
+  const statusColor = {sent:'new', accepted:'paid', draft:'pending', cancelled:'cancelled'};
+  const statusLabel = {sent:'Enviada', accepted:'Aceptada', draft:'Borrador', cancelled:'Cancelada'};
+  document.getElementById('quotes-table').innerHTML = list.map(q=>{
+    const sub = q.products.reduce((a,p)=>a+p.price*p.qty,0);
+    const total = Math.round(sub*1.16);
+    return `<tr>
+      <td style="font-family:'Rajdhani',sans-serif;font-weight:700;color:var(--accent)">${q.id}</td>
+      <td>${q.client}</td>
+      <td style="color:var(--text2)">${q.products.length} producto(s)</td>
+      <td style="font-family:'Rajdhani',sans-serif;font-weight:700">$${total.toLocaleString()}</td>
+      <td style="color:var(--text2)">${q.vigencia} días</td>
+      <td><select onchange="changeQuoteStatus('${q.id}',this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;color:var(--text);cursor:pointer;outline:none">
+        <option value="draft"     ${q.status==='draft'?'selected':''}>📝 Borrador</option>
+        <option value="sent"      ${q.status==='sent'?'selected':''}>📤 Enviada</option>
+        <option value="accepted"  ${q.status==='accepted'?'selected':''}>✅ Aceptada</option>
+        <option value="cancelled" ${q.status==='cancelled'?'selected':''}>❌ Cancelada</option>
+      </select></td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn-primary btn-sm" onclick="editQuote('${q.id}')">✏️ Editar</button>
+          <button class="btn-sm" onclick="generateQuotePDFById('${q.id}')" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;font-size:12px">🖨️</button>
+          <button class="btn-sm" onclick="deleteQuote('${q.id}')" style="padding:6px 10px;border-radius:6px;border:none;background:rgba(255,61,87,0.15);color:var(--accent2);cursor:pointer;font-size:12px">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:30px">Sin cotizaciones</td></tr>`;
+}
+
+function changeQuoteStatus(id, newStatus) {
+  const q = quotes.find(x=>x.id===id);
+  if(!q) return;
+  const oldStatus = q.status;
+  q.status = newStatus;
+  const label = {draft:'Borrador', sent:'Enviada', accepted:'Aceptada', cancelled:'Cancelada'};
+  if(currentEmployee) logActivity(currentEmployee,'client',`Cotización ${id}: ${label[oldStatus]||oldStatus} → ${label[newStatus]}`,'📄');
+  filterQuotesList();
+  showToast(`✅ Cotización ${id} → ${label[newStatus]}`);
+}
+
+function deleteQuote(id) {
+  if(!confirm(`¿Eliminar cotización ${id}?`)) return;
+  quotes = quotes.filter(x=>x.id!==id); filterQuotesList();
+  showToast(`🗑️ Cotización ${id} eliminada`);
+}
+
+function openNewQuote() {
+  editingQuoteId = null;
+  quoteProducts = [];
+  document.getElementById('quote-editor-title').textContent = 'Nueva Cotización';
+  // Fill client select
+  const sel = document.getElementById('qe-client');
+  sel.innerHTML = clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  fillClientData();
+  // Fill product select
+  document.getElementById('qe-prod-select').innerHTML = products.filter(p=>p.active).map(p=>`<option value="${p.id}">${p.emoji} ${p.name} — $${p.price.toLocaleString()}</option>`).join('');
+  document.getElementById('qe-vigencia').value = 15;
+  document.getElementById('qe-notes').value = 'Precios sujetos a cambio sin previo aviso. No incluye instalación salvo indicación.';
+  renderQuoteProducts();
+  document.getElementById('quotes-list-view').style.display='none';
+  document.getElementById('quote-editor').style.display='block';
+}
+
+function editQuote(id) {
+  const q = quotes.find(x=>x.id===id);
+  editingQuoteId = id;
+  quoteProducts = q.products.map(p=>({...p}));
+  document.getElementById('quote-editor-title').textContent = `Editar ${id}`;
+  const sel = document.getElementById('qe-client');
+  sel.innerHTML = clients.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  const client = clients.find(c=>c.name===q.client);
+  if(client) sel.value = client.id;
+  document.getElementById('qe-phone').value = q.phone||'';
+  document.getElementById('qe-email').value = q.email||'';
+  document.getElementById('qe-address').value = q.address||'';
+  document.getElementById('qe-vigencia').value = q.vigencia||15;
+  document.getElementById('qe-notes').value = q.notes||'';
+  document.getElementById('qe-prod-select').innerHTML = products.filter(p=>p.active).map(p=>`<option value="${p.id}">${p.emoji} ${p.name} — $${p.price.toLocaleString()}</option>`).join('');
+  renderQuoteProducts();
+  document.getElementById('quotes-list-view').style.display='none';
+  document.getElementById('quote-editor').style.display='block';
+}
+
+function closeQuoteEditor() {
+  document.getElementById('quotes-list-view').style.display='block';
+  document.getElementById('quote-editor').style.display='none';
+  filterQuotesList();
+}
+
+function fillClientData() {
+  const id = parseInt(document.getElementById('qe-client').value);
+  const c = clients.find(x=>x.id===id);
+  if(c) {
+    document.getElementById('qe-phone').value = c.phone||'';
+    document.getElementById('qe-email').value = c.email||'';
+    document.getElementById('qe-address').value = c.address||'';
+  }
+}
+
+function addQuoteProduct() {
+  const id = parseInt(document.getElementById('qe-prod-select').value);
+  const qty = parseInt(document.getElementById('qe-prod-qty').value)||1;
+  const p = products.find(x=>x.id===id);
+  if(!p) return;
+  const ex = quoteProducts.find(x=>x.id===id);
+  if(ex) ex.qty+=qty;
+  else quoteProducts.push({id:p.id, name:`${p.emoji} ${p.name}`, price:p.price, qty});
+  renderQuoteProducts();
+}
+
+function removeQuoteProduct(id) {
+  quoteProducts = quoteProducts.filter(p=>p.id!==id);
+  renderQuoteProducts();
+}
+
+function updateQuoteQty(id, qty) {
+  const p = quoteProducts.find(x=>x.id===id);
+  if(p) { p.qty=Math.max(1,parseInt(qty)||1); renderQuoteProducts(); }
+}
+
+function renderQuoteProducts() {
+  const body = document.getElementById('qe-products-body');
+  const empty = document.getElementById('qe-empty');
+  const table = document.getElementById('qe-products-table');
+  if(!quoteProducts.length) {
+    table.style.display='none'; empty.style.display='block'; 
+    document.getElementById('qe-subtotal').textContent='$0.00';
+    document.getElementById('qe-iva').textContent='$0.00';
+    document.getElementById('qe-total').textContent='$0.00';
+    return;
+  }
+  table.style.display=''; empty.style.display='none';
+  body.innerHTML = quoteProducts.map(p=>`<tr>
+    <td style="font-size:13px">${p.name}</td>
+    <td style="font-family:'Rajdhani',sans-serif;color:var(--accent)">$${p.price.toLocaleString()}</td>
+    <td><input type="number" value="${p.qty}" min="1" onchange="updateQuoteQty(${p.id},this.value)" style="width:55px;padding:4px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px;text-align:center;outline:none"></td>
+    <td style="font-family:'Rajdhani',sans-serif;font-weight:700">$${(p.price*p.qty).toLocaleString()}</td>
+    <td><button onclick="removeQuoteProduct(${p.id})" style="background:none;border:none;color:var(--accent2);cursor:pointer;font-size:14px">✕</button></td>
+  </tr>`).join('');
+  const sub = quoteProducts.reduce((a,p)=>a+p.price*p.qty,0);
+  const iva = Math.round(sub*0.16);
+  const total = sub+iva;
+  document.getElementById('qe-subtotal').textContent=`$${sub.toLocaleString()}`;
+  document.getElementById('qe-iva').textContent=`$${iva.toLocaleString()}`;
+  document.getElementById('qe-total').textContent=`$${total.toLocaleString()}`;
+}
+
+function saveQuote(status) {
+  if(!quoteProducts.length){showToast('❌ Agrega al menos un producto');return;}
+  const clientId = parseInt(document.getElementById('qe-client').value);
+  const client = clients.find(c=>c.id===clientId);
+  const data = {
+    id: editingQuoteId || `COT-00${nextQuoteId++}`,
+    client: client?.name||'',
+    phone: document.getElementById('qe-phone').value,
+    email: document.getElementById('qe-email').value,
+    address: document.getElementById('qe-address').value,
+    products: [...quoteProducts],
+    notes: document.getElementById('qe-notes').value,
+    vigencia: parseInt(document.getElementById('qe-vigencia').value)||15,
+    date: new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}),
+    status,
+  };
+  if(editingQuoteId) { const idx=quotes.findIndex(x=>x.id===editingQuoteId); quotes[idx]=data; }
+  else quotes.unshift(data);
+  if(currentEmployee) logActivity(currentEmployee,'client',`${editingQuoteId?'Editó':'Creó'} cotización ${data.id} para ${data.client}`,'📄');
+  showToast(`✅ Cotización ${data.id} guardada`);
+  closeQuoteEditor();
+}
+
+function generateQuotePDF() {
+  if(!quoteProducts.length){showToast('❌ Agrega productos primero');return;}
+  const clientId = parseInt(document.getElementById('qe-client').value);
+  const client = clients.find(c=>c.id===clientId);
+  const q = {
+    id: editingQuoteId||`COT-PREV`,
+    client: client?.name||'', phone:document.getElementById('qe-phone').value,
+    email:document.getElementById('qe-email').value, address:document.getElementById('qe-address').value,
+    products:[...quoteProducts], notes:document.getElementById('qe-notes').value,
+    vigencia:parseInt(document.getElementById('qe-vigencia').value)||15,
+    date:new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}),
+  };
+  printQuotePDF(q);
+}
+
+function generateQuotePDFById(id) {
+  const q = quotes.find(x=>x.id===id);
+  if(q) printQuotePDF(q);
+}
+
+function printQuotePDF(q) {
+  const sub = q.products.reduce((a,p)=>a+p.price*p.qty,0);
+  const iva = Math.round(sub*0.16);
+  const total = sub+iva;
+  const expDate = new Date(); expDate.setDate(expDate.getDate()+q.vigencia);
+  const expStr = expDate.toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Cotización ${q.id} — HJ Reparaciones y Más</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',sans-serif;color:#1a1a2e;padding:40px;font-size:13px}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:20px;border-bottom:3px solid #0d1117}
+    .company-name{font-size:26px;font-weight:800;color:#0d1117;letter-spacing:-0.5px}
+    .company-sub{font-size:12px;color:#666;margin-top:2px}
+    .company-contact{font-size:12px;color:#444;margin-top:6px;line-height:1.6}
+    .quote-badge{background:#0d1117;color:#fff;padding:10px 20px;border-radius:8px;text-align:right}
+    .quote-badge .qnum{font-size:20px;font-weight:800;letter-spacing:1px}
+    .quote-badge .qdate{font-size:11px;color:#aaa;margin-top:3px}
+    .section{margin-bottom:24px}
+    .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #eee}
+    .client-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .client-field{padding:10px 12px;background:#f8f9fa;border-radius:6px}
+    .client-field label{display:block;font-size:10px;color:#888;text-transform:uppercase;margin-bottom:2px}
+    .client-field span{font-size:13px;font-weight:600;color:#1a1a2e}
+    table{width:100%;border-collapse:collapse;margin-bottom:16px}
+    th{background:#0d1117;color:#fff;padding:10px 12px;text-align:left;font-size:12px;font-weight:600}
+    td{padding:10px 12px;border-bottom:1px solid #eee;font-size:13px}
+    tr:last-child td{border-bottom:none}
+    tr:nth-child(even){background:#f8f9fa}
+    .totals{display:flex;justify-content:flex-end}
+    .totals-box{width:260px}
+    .total-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #eee}
+    .total-row.final{font-size:16px;font-weight:800;border-bottom:none;padding-top:10px;color:#0d1117}
+    .notes-box{background:#f8f9fa;border-left:3px solid #0d1117;padding:12px 16px;border-radius:0 6px 6px 0;font-size:12px;color:#555;line-height:1.6}
+    .validity{background:#e8f5e9;border:1px solid #c8e6c9;padding:10px 16px;border-radius:6px;font-size:12px;color:#2e7d32;margin-bottom:20px}
+    .footer{text-align:center;margin-top:32px;padding-top:16px;border-top:1px solid #eee;font-size:11px;color:#aaa}
+    .print-btn{position:fixed;top:20px;right:20px;background:#0d1117;color:#fff;border:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;z-index:999}
+    .print-btn:hover{background:#333}
+    @media print{.print-btn{display:none}body{padding:20px}}
+  </style></head><body>
+  <button class="print-btn" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+  <div class="header">
+    <div>
+      <div class="company-name">🔧 HJ Reparaciones y Más</div>
+      <div class="company-sub">Tecnología • Seguridad • Electricidad</div>
+      <div class="company-contact">📍 Frontera, Coahuila &nbsp;|&nbsp; 📱 866 175 5216<br>🌐 hj-reparaciones-y-mas.github.io/CCTV-POS</div>
+    </div>
+    <div class="quote-badge">
+      <div style="font-size:11px;color:#aaa;margin-bottom:4px">COTIZACIÓN</div>
+      <div class="qnum">${q.id}</div>
+      <div class="qdate">Fecha: ${q.date}</div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title">Datos del Cliente</div>
+    <div class="client-grid">
+      <div class="client-field"><label>Nombre / Empresa</label><span>${q.client}</span></div>
+      ${q.phone?`<div class="client-field"><label>Teléfono / WhatsApp</label><span>${q.phone}</span></div>`:''}
+      ${q.email?`<div class="client-field"><label>Email</label><span>${q.email}</span></div>`:''}
+      ${q.address?`<div class="client-field" style="grid-column:1/-1"><label>Dirección</label><span>${q.address}</span></div>`:''}
+    </div>
+  </div>
+  <div class="validity">⏰ Esta cotización tiene vigencia de <strong>${q.vigencia} días</strong> — válida hasta el <strong>${expStr}</strong></div>
+  <div class="section">
+    <div class="section-title">Productos y Servicios</div>
+    <table>
+      <thead><tr><th>#</th><th>Descripción</th><th style="text-align:right">Precio Unit.</th><th style="text-align:center">Cant.</th><th style="text-align:right">Subtotal</th></tr></thead>
+      <tbody>
+        ${q.products.map((p,i)=>`<tr>
+          <td style="color:#888">${i+1}</td>
+          <td>${p.name}</td>
+          <td style="text-align:right">$${p.price.toLocaleString('es-MX',{minimumFractionDigits:2})}</td>
+          <td style="text-align:center">${p.qty}</td>
+          <td style="text-align:right;font-weight:600">$${(p.price*p.qty).toLocaleString('es-MX',{minimumFractionDigits:2})}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+  <div class="totals">
+    <div class="totals-box">
+      <div class="total-row"><span>Subtotal</span><span>$${sub.toLocaleString('es-MX',{minimumFractionDigits:2})}</span></div>
+      <div class="total-row"><span>IVA (16%)</span><span>$${iva.toLocaleString('es-MX',{minimumFractionDigits:2})}</span></div>
+      <div class="total-row final"><span>TOTAL</span><span>$${total.toLocaleString('es-MX',{minimumFractionDigits:2})}</span></div>
+    </div>
+  </div>
+  ${q.notes?`<div class="section" style="margin-top:24px"><div class="section-title">Notas y Condiciones</div><div class="notes-box">${q.notes}</div></div>`:''}
+  <div class="footer">
+    HJ Reparaciones y Más &nbsp;•&nbsp; Frontera, Coahuila &nbsp;•&nbsp; 866 175 5216<br>
+    Cotización generada el ${new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+  </div>
+  </body></html>`;
+  const blob = new Blob([html], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  // Show in-app full screen preview (works everywhere, no popup blocker)
+  const overlay = document.getElementById('pdf-preview-overlay');
+  const frame = document.getElementById('pdf-preview-frame');
+  frame.src = url;
+  overlay.style.display = 'flex';
+  setTimeout(()=>URL.revokeObjectURL(url), 120000);
+}
+function renderActivityLog(list) {
+  const el = document.getElementById('activity-log-container');
+  if(!el) return;
+  if(!list.length){ el.innerHTML='<div style="text-align:center;color:var(--text3);padding:40px;font-size:13px">Sin actividad registrada</div>'; return; }
+  el.innerHTML = `<table class="table"><thead><tr><th>Hora</th><th>Usuario</th><th>Empleado</th><th>Tipo</th><th>Detalle</th></tr></thead><tbody>
+  ${list.map(a=>`<tr>
+    <td style="font-size:11px;color:var(--text2);white-space:nowrap">${a.time}</td>
+    <td style="font-family:'Rajdhani',sans-serif;color:var(--accent)">${a.user}</td>
+    <td>${a.name}</td>
+    <td style="font-size:18px;text-align:center">${a.icon}</td>
+    <td style="font-size:13px;color:var(--text2)">${a.detail}</td>
+  </tr>`).join('')}
+  </tbody></table>`;
+}
+function filterActivity() {
+  const q=(document.getElementById('activity-search')?.value||'').toLowerCase();
+  const f=document.getElementById('activity-filter')?.value||'';
+  renderActivityLog(activityLog.filter(a=>(!f||a.action===f)&&(!q||a.name.toLowerCase().includes(q)||a.detail.toLowerCase().includes(q))));
+}
+function buildActivity() { renderActivityLog(activityLog); }
+
 function showToast(msg, dur=3000) {
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
