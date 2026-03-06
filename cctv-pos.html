@@ -916,9 +916,6 @@ function buildDashboard() {
 }
 
 // ── POS ──
-const cats = ['Todos','Cámaras IP','DVR/NVR','Kits','Accesorios','Servicios'];
-let activeCat = 'Todos';
-
 function buildPOS() {
   const allCats = ['Todos', ...new Set(products.filter(p=>p.active).map(p=>p.cat))];
   document.getElementById('pos-filters').innerHTML = allCats.map(c=>`<div class="filter-chip ${c===activeCat?'active':''}" onclick="filterPOS('${c}')">${c}</div>`).join('');
