@@ -3648,7 +3648,7 @@ loadData();
 <!-- POS Firebase Chat Module -->
 <script type="module">
   import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-  import { getDatabase, ref, onChildAdded, onValue, push, set, serverTimestamp }
+  import { getDatabase, ref, onChildAdded, onValue, push, set, serverTimestamp, get }
     from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
   const firebaseConfig = {
@@ -3716,7 +3716,31 @@ loadData();
       window.renderSessionsList();
     });
 
-    console.log('✅ POS Firebase chat listo');
+    console.log('✅ POS Firebase chat listo — escuchando /chats');
+    // Quick read test
+    get(ref(db, 'chats')).then(snap => {
+      if(snap.exists()) {
+        const keys = Object.keys(snap.val());
+        console.log('📂 Sesiones en Firebase:', keys.length, keys);
+        // Manually trigger for existing sessions
+        keys.forEach(sid => {
+          const data = snap.val()[sid];
+          if(!window.chatSessions[sid]) {
+            window.chatSessions[sid] = { id: sid, info: data.info || { visitorName: 'Visitante' }, messages: [], unread: 0 };
+            // Load existing messages
+            const msgs = data.messages ? Object.entries(data.messages) : [];
+            msgs.forEach(([key, msg]) => {
+              if(msg) window.chatSessions[sid].messages.push({ ...msg, key });
+            });
+            window.renderSessionsList();
+          }
+        });
+      } else {
+        console.log('📂 /chats vacío — aún no hay mensajes');
+      }
+    }).catch(err => {
+      console.error('🔒 Error leyendo /chats:', err.message);
+    });
   } catch(e) {
     console.error('❌ Firebase POS error:', e);
   }
