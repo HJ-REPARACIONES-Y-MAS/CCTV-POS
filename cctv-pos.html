@@ -135,6 +135,111 @@
   .logout-btn:hover { color:var(--accent2); }
 
   .main { margin-left:240px; min-height:100vh; }
+
+  /* ── MOBILE: add .is-mobile to body via JS ── */
+  body.is-mobile .main { margin-left: 0 !important; width: 100% !important; }
+  body.is-mobile .sidebar {
+    position: fixed !important;
+    top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important;
+    width: 100vw !important; height: auto !important;
+    border-right: none !important; border-top: 1px solid var(--border) !important;
+    flex-direction: column !important; z-index: 200;
+  }
+  body.is-mobile .sidebar-logo,
+  body.is-mobile #user-info { display: none !important; }
+  body.is-mobile #nav-menu {
+    display: flex !important; flex-direction: row !important;
+    overflow-x: auto; padding: 6px 6px 10px; gap: 2px;
+    scrollbar-width: none;
+  }
+  body.is-mobile #nav-menu::-webkit-scrollbar { display: none; }
+  body.is-mobile .nav-section { display: none !important; }
+  body.is-mobile .nav-item {
+    flex-shrink: 0 !important; flex-direction: column !important;
+    align-items: center !important; gap: 3px !important;
+    padding: 8px 10px !important; min-width: 66px !important;
+    border-radius: 10px !important; font-size: 10px !important;
+    text-align: center !important; white-space: nowrap !important; line-height: 1.2 !important;
+  }
+  body.is-mobile .nav-item .nav-icon { font-size: 20px !important; display: block !important; }
+  body.is-mobile .badge { display: none; }
+  body.is-mobile .content { padding: 14px !important; padding-bottom: 90px !important; }
+  body.is-mobile .page { padding: 0 !important; }
+
+  /* Topbar */
+  body.is-mobile .topbar { padding: 0 12px !important; height: 50px !important; }
+  body.is-mobile .page-title { font-size: 15px !important; }
+  body.is-mobile .search-box { display: none !important; }
+
+  /* Stats */
+  body.is-mobile .stats-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  body.is-mobile .stat-card { padding: 14px 12px !important; }
+  body.is-mobile .stat-value { font-size: 20px !important; }
+  body.is-mobile .stat-label { font-size: 10px !important; letter-spacing: 0 !important; }
+  body.is-mobile .stat-icon { font-size: 22px !important; top: 10px !important; right: 10px !important; }
+
+  /* Grids */
+  body.is-mobile .grid-2,
+  body.is-mobile .grid-2b { grid-template-columns: 1fr !important; }
+  body.is-mobile .card { padding: 14px !important; }
+
+  /* POS */
+  body.is-mobile .pos-layout { grid-template-columns: 1fr !important; height: auto !important; }
+  body.is-mobile .products-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  body.is-mobile .product-card { padding: 12px 10px !important; }
+  body.is-mobile .product-emoji { font-size: 26px !important; }
+  body.is-mobile .product-name { font-size: 12px !important; }
+  body.is-mobile .product-filters { overflow-x: auto; white-space: nowrap; padding-bottom: 4px; }
+
+  /* Cart slide-up */
+  body.is-mobile .cart-panel {
+    position: fixed !important; bottom: 68px !important;
+    left: 0 !important; right: 0 !important;
+    max-height: 62vh !important; overflow-y: auto !important;
+    background: var(--surface) !important;
+    border-top: 2px solid var(--accent) !important;
+    border-radius: 20px 20px 0 0 !important;
+    padding: 16px !important; z-index: 190 !important;
+    display: none !important; height: auto !important;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+  }
+  body.is-mobile .cart-panel.open { display: block !important; }
+  body.is-mobile #cart-toggle-btn {
+    display: block !important;
+    position: fixed !important; bottom: 74px !important; right: 14px !important;
+    z-index: 195 !important; padding: 11px 20px !important;
+    background: var(--accent) !important; color: #000 !important;
+    border: none !important; border-radius: 30px !important;
+    font-family: 'Rajdhani', sans-serif !important;
+    font-weight: 700 !important; font-size: 14px !important; cursor: pointer !important;
+    box-shadow: 0 4px 20px rgba(0,229,255,0.45) !important;
+  }
+  body.is-mobile .checkout-btn { min-height: 52px !important; font-size: 16px !important; }
+
+  /* Tables */
+  body.is-mobile .table th,
+  body.is-mobile .table td { padding: 8px 6px !important; font-size: 11px !important; }
+
+  /* Controls */
+  body.is-mobile .inv-controls { flex-wrap: wrap !important; gap: 8px !important; }
+  body.is-mobile .inv-search { width: 100% !important; order: -1; }
+  body.is-mobile .clients-grid { grid-template-columns: 1fr !important; }
+  body.is-mobile #employees-grid { grid-template-columns: 1fr !important; }
+  body.is-mobile #cajas-status { grid-template-columns: 1fr !important; }
+  body.is-mobile #report-stats { grid-template-columns: 1fr 1fr !important; }
+
+  /* Modals */
+  body.is-mobile .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+  body.is-mobile .modal {
+    width: 100% !important; max-width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 88vh !important; overflow-y: auto !important;
+    padding: 20px 16px 30px !important;
+  }
+  body.is-mobile .modal-grid { grid-template-columns: 1fr !important; }
+  body.is-mobile .btn-primary,
+  body.is-mobile .btn-secondary { min-height: 44px !important; }
+  body.is-mobile .notif-panel { width: 280px !important; right: -8px !important; }
   .topbar {
     position:sticky; top:0; z-index:50;
     background:rgba(10,12,16,0.9); backdrop-filter:blur(12px);
@@ -431,126 +536,7 @@
   ::-webkit-scrollbar-track { background:var(--surface); }
   ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
 
-  /* ── MOBILE RESPONSIVE ── */
-  @media (max-width: 768px) {
-    /* Layout */
-    .app-layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
 
-    /* Sidebar → bottom tab bar */
-    .sidebar {
-      position: fixed; bottom: 0; left: 0; right: 0; top: auto;
-      width: 100%; height: auto; z-index: 100;
-      border-top: 1px solid var(--border); border-right: none;
-      padding: 0; overflow: visible;
-      display: flex; flex-direction: column;
-    }
-    .sidebar-logo, .sidebar-role, #user-info { display: none; }
-    #nav-menu {
-      display: flex; flex-direction: row; overflow-x: auto;
-      padding: 6px 8px; gap: 4px;
-      scrollbar-width: none;
-    }
-    #nav-menu::-webkit-scrollbar { display: none; }
-    .nav-section { display: none; }
-    .nav-item {
-      flex-shrink: 0; flex-direction: column; gap: 2px;
-      padding: 8px 12px; min-width: 64px; border-radius: 10px;
-      font-size: 10px; text-align: center; white-space: nowrap;
-    }
-    .nav-item .nav-icon { font-size: 18px; }
-    .badge { display: none; }
-
-    /* Main content */
-    .main { padding-bottom: 80px; overflow-y: auto; }
-
-    /* Topbar */
-    .topbar { padding: 12px 14px; }
-    .page-title { font-size: 16px; }
-    .search-box { display: none; }
-    #save-indicator { font-size: 10px; }
-
-    /* Stats grid → 2 cols */
-    .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-    .stat-card { padding: 14px; }
-    .stat-value { font-size: 22px; }
-    .stat-icon { font-size: 24px; top: 12px; right: 12px; }
-
-    /* Charts grid → 1 col */
-    .grid-2, .grid-2b { grid-template-columns: 1fr; }
-
-    /* POS layout → stacked */
-    .pos-layout { grid-template-columns: 1fr; height: auto; }
-    .products-grid { grid-template-columns: repeat(2,1fr); }
-    .product-card { padding: 12px; }
-    .product-emoji { font-size: 28px; }
-    .product-name { font-size: 12px; }
-    .cart-panel {
-      position: fixed; bottom: 70px; left: 0; right: 0;
-      max-height: 55vh; overflow-y: auto;
-      background: var(--surface); border-top: 2px solid var(--accent);
-      border-radius: 20px 20px 0 0; padding: 16px;
-      z-index: 90; display: none;
-    }
-    .cart-panel.open { display: block; }
-    #cart-toggle-btn {
-      position: fixed; bottom: 76px; right: 14px;
-      z-index: 95; padding: 12px 18px;
-      background: var(--accent); color: #000;
-      border: none; border-radius: 30px;
-      font-weight: 700; font-size: 14px; cursor: pointer;
-      box-shadow: 0 4px 20px rgba(0,229,255,0.4);
-    }
-
-    /* Tables → simplified */
-    .table th, .table td { padding: 8px 10px; font-size: 12px; }
-    .table th:nth-child(3), .table td:nth-child(3),
-    .table th:nth-child(6), .table td:nth-child(6) { display: none; }
-
-    /* Inventory controls → wrap */
-    .inv-controls { flex-wrap: wrap; gap: 8px; }
-    .inv-controls button { flex: 1; min-width: 120px; }
-    .inv-search { width: 100%; }
-
-    /* Clients grid → 1 col */
-    .clients-grid { grid-template-columns: 1fr; }
-
-    /* Employees grid → 1 col */
-    #employees-grid { grid-template-columns: 1fr !important; }
-
-    /* Cajas → 1 col */
-    #cajas-status { grid-template-columns: 1fr !important; }
-
-    /* Reports stats → 2 col */
-    #report-stats { grid-template-columns: 1fr 1fr; }
-
-    /* Modals → full screen */
-    .modal-overlay { align-items: flex-end; padding: 0; }
-    .modal {
-      width: 100% !important; max-width: 100%;
-      border-radius: 20px 20px 0 0;
-      max-height: 90vh; overflow-y: auto;
-      padding: 20px 16px;
-    }
-    .modal-grid { grid-template-columns: 1fr !important; }
-
-    /* Quote editor → single col */
-    #quote-editor > div > div:last-child { grid-template-columns: 1fr !important; }
-
-    /* Buttons → touch friendly */
-    .btn-primary, .btn-secondary { min-height: 44px; }
-    .checkout-btn { min-height: 52px; font-size: 16px; }
-    .client-actions { flex-wrap: wrap; }
-    .btn-sm { min-height: 38px; font-size: 13px; }
-
-    /* PDF overlay */
-    #pdf-preview-overlay > div:first-child { flex-wrap: wrap; gap: 8px; padding: 10px; }
-  }
-
-  @media (max-width: 420px) {
-    .stats-grid { grid-template-columns: 1fr; }
-    .products-grid { grid-template-columns: 1fr 1fr; }
-    .nav-item { min-width: 54px; padding: 6px 8px; font-size: 9px; }
-  }
 </style>
 </head>
 <body>
@@ -1508,6 +1494,7 @@ function logActivity(emp, action, detail, icon='📌') {
 function initApp() {
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
+  applyMobileClass();
   const isAdmin = currentUser==='admin' || currentUser==='employee';
   const emp = currentEmployee;
   document.getElementById('sidebar-role').textContent = isAdmin ? (emp?emp.caja:'Admin Panel') : 'Portal Cliente';
@@ -2930,28 +2917,35 @@ function showToast(msg, dur=3000) {
 // ── MOBILE HELPERS ──
 function isMobile() { return window.innerWidth <= 768; }
 
+function applyMobileClass() {
+  if(isMobile()) {
+    document.body.classList.add('is-mobile');
+  } else {
+    document.body.classList.remove('is-mobile');
+    // Restore cart panel on desktop
+    const panel = document.querySelector('.cart-panel');
+    if(panel) panel.classList.remove('open');
+  }
+}
+
 function toggleMobileCart() {
   const panel = document.querySelector('.cart-panel');
   const btn = document.getElementById('cart-toggle-btn');
   if(!panel) return;
   panel.classList.toggle('open');
-  btn.textContent = panel.classList.contains('open') ? '✕ Cerrar carrito' : `🛒 Ver carrito ${cart.length ? `(${cart.length})` : ''}`;
+  btn.textContent = panel.classList.contains('open') ? '✕ Cerrar carrito' : `🛒 Ver carrito${cart.length ? ` (${cart.length})` : ''}`;
 }
 
 function updateMobileCartBtn() {
   const btn = document.getElementById('cart-toggle-btn');
   if(!btn) return;
-  if(isMobile()) {
-    btn.style.display = 'block';
-    const isOpen = document.querySelector('.cart-panel')?.classList.contains('open');
-    btn.textContent = isOpen ? '✕ Cerrar carrito' : `🛒 Ver carrito${cart.length ? ` (${cart.length})` : ''}`;
-  } else {
-    btn.style.display = 'none';
-    document.querySelector('.cart-panel')?.classList.remove('open');
-  }
+  const isOpen = document.querySelector('.cart-panel')?.classList.contains('open');
+  btn.textContent = isOpen ? '✕ Cerrar carrito' : `🛒 Ver carrito${cart.length ? ` (${cart.length})` : ''}`;
 }
 
-window.addEventListener('resize', updateMobileCartBtn);
+window.addEventListener('resize', applyMobileClass);
+// Apply on load
+applyMobileClass();
 
 // ── KEY ──
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none') doLogin(); });
