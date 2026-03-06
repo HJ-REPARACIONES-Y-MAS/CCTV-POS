@@ -683,5 +683,324 @@ document.querySelectorAll('#nav-links a').forEach(a => {
   });
 });
 </script>
+<!-- LIVE CHAT WIDGET -->
+<style>
+  /* Chat button */
+  .chat-fab {
+    position: fixed; bottom: 100px; right: 20px; z-index: 300;
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 18px 12px 14px;
+    border-radius: 30px;
+    background: linear-gradient(135deg, #00d4ff, #0080ff);
+    cursor: pointer; border: none;
+    box-shadow: 0 4px 20px rgba(0,212,255,0.45);
+    transition: all 0.3s;
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px; font-weight: 700; color: #000;
+    white-space: nowrap;
+    animation: chatPulse 3s 1s ease infinite;
+  }
+  .chat-fab:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,212,255,0.6); animation:none; }
+  .chat-fab svg { width:22px; height:22px; fill:#000; flex-shrink:0; }
+  .chat-fab .chat-unread {
+    background:#ff3d57; color:#fff; font-size:11px; font-weight:700;
+    padding:2px 7px; border-radius:10px;
+    display:none; align-items:center; justify-content:center;
+    margin-left:4px;
+  }
+  @keyframes chatPulse {
+    0%,100%{box-shadow:0 4px 20px rgba(0,212,255,0.4)}
+    50%{box-shadow:0 4px 32px rgba(0,212,255,0.7)}
+  }
+
+  /* Chat window */
+  .chat-window {
+    position:fixed; bottom:168px; right:28px; z-index:300;
+    width:340px; max-height:500px;
+    background:#12151e; border:1px solid #1e2436;
+    border-radius:16px; display:none; flex-direction:column;
+    box-shadow:0 20px 60px rgba(0,0,0,0.6);
+    animation: chatIn 0.3s ease;
+    overflow:hidden;
+  }
+  .chat-window.open { display:flex; }
+  @keyframes chatIn {
+    from{opacity:0;transform:translateY(16px) scale(0.97)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+  .chat-head {
+    padding:14px 16px; background:linear-gradient(135deg,#0d1117,#12192e);
+    border-bottom:1px solid #1e2436;
+    display:flex; align-items:center; gap:10px;
+  }
+  .chat-avatar {
+    width:38px; height:38px; border-radius:50%;
+    background:linear-gradient(135deg,#00d4ff,#0080ff);
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px; flex-shrink:0; position:relative;
+  }
+  .chat-online-dot {
+    position:absolute; bottom:1px; right:1px;
+    width:10px; height:10px; border-radius:50%;
+    background:#00e676; border:2px solid #12151e;
+  }
+  .chat-head-info strong { display:block; font-size:14px; font-weight:700; color:#f0f2f8; }
+  .chat-head-info small { font-size:11px; color:#00d4ff; }
+  .chat-close { margin-left:auto; background:none; border:none; color:#7a8499; font-size:20px; cursor:pointer; padding:4px; line-height:1; }
+  .chat-close:hover { color:#f0f2f8; }
+
+  .chat-messages {
+    flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px;
+    min-height:200px; max-height:300px;
+    scrollbar-width:thin; scrollbar-color:#1e2436 transparent;
+  }
+  .chat-messages::-webkit-scrollbar { width:4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background:#1e2436; border-radius:4px; }
+
+  .chat-msg { display:flex; flex-direction:column; max-width:82%; }
+  .chat-msg.from-client { align-self:flex-end; align-items:flex-end; }
+  .chat-msg.from-agent { align-self:flex-start; align-items:flex-start; }
+  .chat-bubble {
+    padding:9px 13px; border-radius:14px; font-size:13px; line-height:1.5;
+    word-break:break-word;
+  }
+  .from-client .chat-bubble { background:#0080ff; color:#fff; border-radius:14px 14px 4px 14px; }
+  .from-agent .chat-bubble { background:#181c28; color:#f0f2f8; border:1px solid #1e2436; border-radius:14px 14px 14px 4px; }
+  .chat-time { font-size:10px; color:#7a8499; margin-top:3px; padding:0 4px; }
+
+  .chat-ask-name {
+    padding:14px; background:#0d1117; border-top:1px solid #1e2436;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .chat-ask-name p { font-size:12px; color:#7a8499; }
+  .chat-ask-name input {
+    padding:9px 12px; background:#181c28; border:1px solid #1e2436;
+    border-radius:8px; color:#f0f2f8; font-size:13px; font-family:'Outfit',sans-serif; outline:none;
+    transition:border-color 0.2s;
+  }
+  .chat-ask-name input:focus { border-color:#00d4ff; }
+  .chat-ask-name button {
+    padding:10px; background:linear-gradient(135deg,#00d4ff,#0080ff);
+    border:none; border-radius:8px; color:#000; font-weight:700;
+    font-size:13px; cursor:pointer; font-family:'Outfit',sans-serif;
+  }
+
+  .chat-input-area {
+    display:none; padding:10px 12px; border-top:1px solid #1e2436;
+    background:#0d1117; gap:8px; align-items:flex-end;
+  }
+  .chat-input-area.active { display:flex; }
+  .chat-input-area textarea {
+    flex:1; padding:9px 12px; background:#181c28; border:1px solid #1e2436;
+    border-radius:10px; color:#f0f2f8; font-size:13px; font-family:'Outfit',sans-serif;
+    outline:none; resize:none; max-height:80px; line-height:1.4;
+    transition:border-color 0.2s;
+  }
+  .chat-input-area textarea:focus { border-color:#00d4ff; }
+  .chat-send-btn {
+    width:38px; height:38px; border-radius:10px; flex-shrink:0;
+    background:linear-gradient(135deg,#00d4ff,#0080ff);
+    border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:opacity 0.2s;
+  }
+  .chat-send-btn:hover { opacity:0.85; }
+  .chat-send-btn svg { width:18px; height:18px; fill:white; }
+
+  .chat-typing { font-size:11px; color:#7a8499; padding:0 14px 8px; display:none; font-style:italic; }
+
+  @media (max-width:600px) {
+    .chat-window { right:12px; left:12px; width:auto; bottom:160px; }
+    .chat-fab { bottom:88px; right:12px; font-size:13px; padding:10px 14px 10px 12px; }
+  }
+</style>
+
+<!-- Chat Button -->
+<button class="chat-fab" onclick="toggleChat()" id="chat-fab-btn" title="Chat en vivo">
+  <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+  💬 Chatear ahora
+  <span class="chat-unread" id="chat-unread-badge"></span>
+</button>
+
+<!-- Chat Window -->
+<div class="chat-window" id="chat-window">
+  <div class="chat-head">
+    <div class="chat-avatar">
+      🔧
+      <div class="chat-online-dot" id="chat-online-dot"></div>
+    </div>
+    <div class="chat-head-info">
+      <strong>HJ Reparaciones</strong>
+      <small id="chat-status-text">En línea — respuesta rápida</small>
+    </div>
+    <button class="chat-close" onclick="toggleChat()">✕</button>
+  </div>
+
+  <div class="chat-messages" id="chat-messages">
+    <div class="chat-msg from-agent">
+      <div class="chat-bubble">👋 ¡Hola! Bienvenido a HJ Reparaciones. ¿En qué te podemos ayudar hoy?</div>
+      <div class="chat-time">HJ Reparaciones</div>
+    </div>
+  </div>
+  <div class="chat-typing" id="chat-typing">HJ Reparaciones está escribiendo...</div>
+
+  <!-- Step 1: Ask name -->
+  <div class="chat-ask-name" id="chat-ask-name">
+    <p>¿Cuál es tu nombre para poder atenderte?</p>
+    <input id="chat-name-input" placeholder="Tu nombre..." maxlength="40" onkeydown="if(event.key==='Enter')startChat()">
+    <button onclick="startChat()">Iniciar chat →</button>
+  </div>
+
+  <!-- Step 2: Input area -->
+  <div class="chat-input-area" id="chat-input-area">
+    <textarea id="chat-msg-input" placeholder="Escribe tu mensaje..." rows="1"
+      oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg()}"></textarea>
+    <button class="chat-send-btn" onclick="sendChatMsg()">
+      <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<!-- Chat: UI script (regular, available immediately) -->
+<script>
+  let chatOpen = false;
+  let unreadCount = 0;
+  let chatFirebase = null; // set by module when ready
+  let visitorName = null;
+
+  function toggleChat() {
+    const win = document.getElementById('chat-window');
+    chatOpen = !chatOpen;
+    win.classList.toggle('open', chatOpen);
+    if(chatOpen) {
+      unreadCount = 0;
+      updateUnreadBadge();
+      setTimeout(()=>document.getElementById('chat-name-input')?.focus(), 100);
+    }
+  }
+
+  function startChat() {
+    const nameEl = document.getElementById('chat-name-input');
+    const name = nameEl?.value.trim();
+    if(!name) { nameEl?.focus(); return; }
+    visitorName = name;
+    document.getElementById('chat-ask-name').style.display = 'none';
+    document.getElementById('chat-input-area').classList.add('active');
+    document.getElementById('chat-msg-input').focus();
+    // Delegate to Firebase module
+    if(chatFirebase) chatFirebase.startSession(name);
+    else enableOfflineMode();
+  }
+
+  function sendChatMsg() {
+    const el = document.getElementById('chat-msg-input');
+    const text = el?.value.trim();
+    if(!text) return;
+    el.value = ''; el.style.height = 'auto';
+    appendMessage(text, 'from-client', null, visitorName||'Tú');
+    if(chatFirebase) chatFirebase.sendMsg(text);
+  }
+
+  function appendMessage(text, cls, time, sender) {
+    const container = document.getElementById('chat-messages');
+    if(!container) return;
+    const t = time || new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+    const div = document.createElement('div');
+    div.className = `chat-msg ${cls}`;
+    div.innerHTML = `<div class="chat-bubble">${escapeHtml(text)}</div><div class="chat-time">${sender} · ${t}</div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    if(!chatOpen && cls === 'from-agent') { unreadCount++; updateUnreadBadge(); }
+  }
+
+  function updateUnreadBadge() {
+    const badge = document.getElementById('chat-unread-badge');
+    if(!badge) return;
+    if(unreadCount > 0) { badge.textContent = unreadCount; badge.style.display='flex'; }
+    else badge.style.display='none';
+  }
+
+  function escapeHtml(t) {
+    return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+
+  function enableOfflineMode() {
+    const msgs = document.getElementById('chat-messages');
+    if(msgs) {
+      const div = document.createElement('div');
+      div.className = 'chat-msg from-agent';
+      div.innerHTML = `<div class="chat-bubble">🔧 Mensaje recibido. Te contactaremos pronto. También puedes escribirnos por <a href="https://wa.me/528661755216" style="color:#00d4ff" target="_blank">WhatsApp</a>.</div>`;
+      msgs.appendChild(div);
+    }
+  }
+</script>
+
+<!-- Chat: Firebase module (loads async, sets chatFirebase when ready) -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getDatabase, ref, push, onChildAdded, set, onValue, serverTimestamp }
+    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBwHRcdelW9-bN9A6aH8qgecX_--V0_v8I",
+    authDomain: "hj-reparaciones-chat.firebaseapp.com",
+    databaseURL: "https://hj-reparaciones-chat-default-rtdb.firebaseio.com",
+    projectId: "hj-reparaciones-chat",
+    storageBucket: "hj-reparaciones-chat.firebasestorage.app",
+    messagingSenderId: "970106362467",
+    appId: "1:970106362467:web:da6e3a3b8a84bbdb7f7656",
+    measurementId: "G-R0LDPX5WF2"
+  };
+
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    function getSessionId() {
+      let sid = sessionStorage.getItem('hj_chat_session');
+      if(!sid) { sid = 'visitor_' + Date.now() + '_' + Math.random().toString(36).substr(2,6); sessionStorage.setItem('hj_chat_session', sid); }
+      return sid;
+    }
+
+    let sessionId = null;
+    let chatRef = null;
+
+    // Expose API to UI script
+    window.chatFirebase = {
+      startSession(name) {
+        sessionId = getSessionId();
+        chatRef = ref(db, `chats/${sessionId}`);
+        set(ref(db, `chats/${sessionId}/info`), {
+          visitorName: name, startedAt: serverTimestamp(), status: 'open', url: location.href
+        });
+        // Listen for agent replies
+        onChildAdded(ref(db, `chats/${sessionId}/messages`), snap => {
+          const msg = snap.val();
+          if(msg && msg.from === 'agent') {
+            window.appendMessage(msg.text, 'from-agent', msg.time, 'HJ Reparaciones');
+          }
+        });
+        // Agent typing indicator
+        onValue(ref(db, `chats/${sessionId}/agentTyping`), snap => {
+          const el = document.getElementById('chat-typing');
+          if(el) el.style.display = snap.val() ? 'block' : 'none';
+        });
+        // Auto first message
+        this.sendMsg('👋 Hola, soy ' + name + '. Me gustaría hacer una consulta.');
+      },
+      sendMsg(text) {
+        if(!sessionId) return;
+        push(ref(db, `chats/${sessionId}/messages`), {
+          text, from: 'visitor', visitorName: window.visitorName,
+          time: new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
+          ts: serverTimestamp(), read: false
+        });
+      }
+    };
+  } catch(e) {
+    console.warn('Firebase no disponible:', e);
+  }
+</script>
 </body>
 </html>
