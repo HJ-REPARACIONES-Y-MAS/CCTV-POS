@@ -430,6 +430,127 @@
   ::-webkit-scrollbar { width:5px; }
   ::-webkit-scrollbar-track { background:var(--surface); }
   ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+  /* ── MOBILE RESPONSIVE ── */
+  @media (max-width: 768px) {
+    /* Layout */
+    .app-layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+
+    /* Sidebar → bottom tab bar */
+    .sidebar {
+      position: fixed; bottom: 0; left: 0; right: 0; top: auto;
+      width: 100%; height: auto; z-index: 100;
+      border-top: 1px solid var(--border); border-right: none;
+      padding: 0; overflow: visible;
+      display: flex; flex-direction: column;
+    }
+    .sidebar-logo, .sidebar-role, #user-info { display: none; }
+    #nav-menu {
+      display: flex; flex-direction: row; overflow-x: auto;
+      padding: 6px 8px; gap: 4px;
+      scrollbar-width: none;
+    }
+    #nav-menu::-webkit-scrollbar { display: none; }
+    .nav-section { display: none; }
+    .nav-item {
+      flex-shrink: 0; flex-direction: column; gap: 2px;
+      padding: 8px 12px; min-width: 64px; border-radius: 10px;
+      font-size: 10px; text-align: center; white-space: nowrap;
+    }
+    .nav-item .nav-icon { font-size: 18px; }
+    .badge { display: none; }
+
+    /* Main content */
+    .main { padding-bottom: 80px; overflow-y: auto; }
+
+    /* Topbar */
+    .topbar { padding: 12px 14px; }
+    .page-title { font-size: 16px; }
+    .search-box { display: none; }
+    #save-indicator { font-size: 10px; }
+
+    /* Stats grid → 2 cols */
+    .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-card { padding: 14px; }
+    .stat-value { font-size: 22px; }
+    .stat-icon { font-size: 24px; top: 12px; right: 12px; }
+
+    /* Charts grid → 1 col */
+    .grid-2, .grid-2b { grid-template-columns: 1fr; }
+
+    /* POS layout → stacked */
+    .pos-layout { grid-template-columns: 1fr; height: auto; }
+    .products-grid { grid-template-columns: repeat(2,1fr); }
+    .product-card { padding: 12px; }
+    .product-emoji { font-size: 28px; }
+    .product-name { font-size: 12px; }
+    .cart-panel {
+      position: fixed; bottom: 70px; left: 0; right: 0;
+      max-height: 55vh; overflow-y: auto;
+      background: var(--surface); border-top: 2px solid var(--accent);
+      border-radius: 20px 20px 0 0; padding: 16px;
+      z-index: 90; display: none;
+    }
+    .cart-panel.open { display: block; }
+    #cart-toggle-btn {
+      position: fixed; bottom: 76px; right: 14px;
+      z-index: 95; padding: 12px 18px;
+      background: var(--accent); color: #000;
+      border: none; border-radius: 30px;
+      font-weight: 700; font-size: 14px; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0,229,255,0.4);
+    }
+
+    /* Tables → simplified */
+    .table th, .table td { padding: 8px 10px; font-size: 12px; }
+    .table th:nth-child(3), .table td:nth-child(3),
+    .table th:nth-child(6), .table td:nth-child(6) { display: none; }
+
+    /* Inventory controls → wrap */
+    .inv-controls { flex-wrap: wrap; gap: 8px; }
+    .inv-controls button { flex: 1; min-width: 120px; }
+    .inv-search { width: 100%; }
+
+    /* Clients grid → 1 col */
+    .clients-grid { grid-template-columns: 1fr; }
+
+    /* Employees grid → 1 col */
+    #employees-grid { grid-template-columns: 1fr !important; }
+
+    /* Cajas → 1 col */
+    #cajas-status { grid-template-columns: 1fr !important; }
+
+    /* Reports stats → 2 col */
+    #report-stats { grid-template-columns: 1fr 1fr; }
+
+    /* Modals → full screen */
+    .modal-overlay { align-items: flex-end; padding: 0; }
+    .modal {
+      width: 100% !important; max-width: 100%;
+      border-radius: 20px 20px 0 0;
+      max-height: 90vh; overflow-y: auto;
+      padding: 20px 16px;
+    }
+    .modal-grid { grid-template-columns: 1fr !important; }
+
+    /* Quote editor → single col */
+    #quote-editor > div > div:last-child { grid-template-columns: 1fr !important; }
+
+    /* Buttons → touch friendly */
+    .btn-primary, .btn-secondary { min-height: 44px; }
+    .checkout-btn { min-height: 52px; font-size: 16px; }
+    .client-actions { flex-wrap: wrap; }
+    .btn-sm { min-height: 38px; font-size: 13px; }
+
+    /* PDF overlay */
+    #pdf-preview-overlay > div:first-child { flex-wrap: wrap; gap: 8px; padding: 10px; }
+  }
+
+  @media (max-width: 420px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .products-grid { grid-template-columns: 1fr 1fr; }
+    .nav-item { min-width: 54px; padding: 6px 8px; font-size: 9px; }
+  }
 </style>
 </head>
 <body>
@@ -497,6 +618,7 @@
     <div class="topbar">
       <div class="page-title" id="page-title">Dashboard</div>
       <div class="topbar-actions">
+        <div id="save-indicator" style="font-size:11px;color:var(--text3);display:none">💾 Guardado</div>
         <div class="search-box">
           <span style="color:var(--text3)">🔍</span>
           <input placeholder="Buscar productos, clientes...">
@@ -548,6 +670,22 @@
             <div class="stat-icon">⚠️</div>
           </div>
         </div>
+
+        <!-- Banner Analytics -->
+        <div onclick="window.open('https://analytics.google.com','_blank')" style="cursor:pointer;background:linear-gradient(135deg,rgba(66,133,244,0.12),rgba(52,168,83,0.08));border:1px solid rgba(66,133,244,0.25);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;transition:all 0.2s" onmouseover="this.style.borderColor='rgba(66,133,244,0.5)'" onmouseout="this.style.borderColor='rgba(66,133,244,0.25)'">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:42px;height:42px;background:rgba(66,133,244,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px">📊</div>
+            <div>
+              <div style="font-size:14px;font-weight:700;margin-bottom:2px">Google Analytics — Landing Page</div>
+              <div style="font-size:12px;color:var(--text2)">Ver visitas, dispositivos, ciudades y qué botones presionan tus clientes</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:11px;color:var(--text3)">analytics.google.com</span>
+            <div style="padding:8px 16px;background:rgba(66,133,244,0.2);border:1px solid rgba(66,133,244,0.3);border-radius:7px;font-size:13px;font-weight:600;color:#4285f4">Abrir →</div>
+          </div>
+        </div>
+
         <div class="grid-2">
           <div class="card">
             <div class="card-header">
@@ -590,6 +728,8 @@
 
       <!-- POS -->
       <div class="page" id="page-pos">
+        <!-- Mobile cart toggle button -->
+        <button id="cart-toggle-btn" onclick="toggleMobileCart()" style="display:none">🛒 Ver carrito <span id="cart-badge-mobile"></span></button>
         <div class="pos-layout">
           <div>
             <div class="product-filters" id="pos-filters"></div>
@@ -739,6 +879,7 @@
         <div class="inv-controls" style="margin-bottom:20px">
           <div class="inv-search"><span>🔍</span><input id="emp-search" placeholder="Buscar empleado..." oninput="filterEmployees()"></div>
           <button class="btn-primary" onclick="openEmployeeModal(null)">+ Nuevo Empleado</button>
+          <button onclick="resetAllData()" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(255,61,87,0.3);background:rgba(255,61,87,0.08);color:var(--accent2);font-size:12px;cursor:pointer" title="Borrar todos los datos y restaurar ejemplo">🗑️ Resetear datos</button>
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px" id="employees-grid"></div>
       </div>
@@ -1176,7 +1317,7 @@ let stockTargetId = null;
 let stockOp = 'add';
 let itemType = 'product';
 
-const orders = [
+let orders = [
   {id:'#001234',client:'Carlos Hernández',products:'Cámara IP 4K x2',pay:'Tarjeta',total:3700,status:'paid',date:'06/Mar/2026'},
   {id:'#001233',client:'TechSeguridad SA',products:'Kit 8 Cámaras',pay:'Transferencia',total:12900,status:'paid',date:'05/Mar/2026'},
   {id:'#001232',client:'María González',products:'NVR 8Ch + Cables',pay:'Efectivo',total:5350,status:'pending',date:'05/Mar/2026'},
@@ -1235,13 +1376,82 @@ let cajas = [
 let nextCajaId = 4;
 
 // Órdenes extendidas con caja y empleado
-const ordersExtended = [
+let ordersExtended = [
   {id:'#001234', client:'Carlos Hernández', products:'Cámara IP 4K x2', pay:'Tarjeta', total:3700, status:'paid', date:'06/Mar/2026', hour:'10:23', employee:'Administrador', caja:'Caja 1'},
   {id:'#001233', client:'TechSeguridad SA', products:'Kit 8 Cámaras', pay:'Transferencia', total:12900, status:'paid', date:'05/Mar/2026', hour:'11:45', employee:'Juan Pérez', caja:'Caja 2'},
   {id:'#001232', client:'María González', products:'NVR 8Ch + Cables', pay:'Efectivo', total:5350, status:'pending', date:'05/Mar/2026', hour:'14:30', employee:'Ana López', caja:'Caja 3'},
   {id:'#001231', client:'Roberto Vega', products:'DVR 16Ch', pay:'Tarjeta', total:3100, status:'paid', date:'04/Mar/2026', hour:'09:15', employee:'Juan Pérez', caja:'Caja 2'},
   {id:'#001230', client:'Construmax MX', products:'Kit 4 Cámaras', pay:'Crédito', total:6800, status:'cancelled', date:'03/Mar/2026', hour:'16:00', employee:'Administrador', caja:'Caja 1'},
 ];
+
+// ── LOCAL STORAGE ──
+const DB_KEY = 'hj_pos_data';
+
+const DEFAULT_DATA = () => ({
+  products: [...products],
+  categories: [...categories],
+  priceHistory: [],
+  nextId: 16,
+  orders: [...orders],
+  ordersExtended: [...ordersExtended],
+  clients: [...clients],
+  nextClientId: 7,
+  employees: [...employees],
+  nextEmployeeId: 4,
+  cajas: [...cajas],
+  nextCajaId: 4,
+  activityLog: [...activityLog],
+  quotes: [],
+  nextQuoteId: 1,
+});
+
+function saveData() {
+  try {
+    const data = {
+      products, categories, priceHistory, nextId,
+      orders, ordersExtended,
+      clients, nextClientId,
+      employees, nextEmployeeId,
+      cajas, nextCajaId,
+      activityLog: activityLog.slice(0,200),
+      quotes, nextQuoteId,
+    };
+    localStorage.setItem(DB_KEY, JSON.stringify(data));
+  } catch(e) { console.warn('Error guardando datos:', e); }
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+    if(!raw) return false;
+    const d = JSON.parse(raw);
+    if(d.products)       products       = d.products;
+    if(d.categories)     categories     = d.categories;
+    if(d.priceHistory)   priceHistory   = d.priceHistory;
+    if(d.nextId)         nextId         = d.nextId;
+    if(d.orders)         orders         = d.orders;
+    if(d.ordersExtended) ordersExtended = d.ordersExtended;
+    if(d.clients)        clients        = d.clients;
+    if(d.nextClientId)   nextClientId   = d.nextClientId;
+    if(d.employees)      employees      = d.employees;
+    if(d.nextEmployeeId) nextEmployeeId = d.nextEmployeeId;
+    if(d.cajas)          cajas          = d.cajas;
+    if(d.nextCajaId)     nextCajaId     = d.nextCajaId;
+    if(d.activityLog)    activityLog    = d.activityLog;
+    if(d.quotes)         quotes         = d.quotes;
+    if(d.nextQuoteId)    nextQuoteId    = d.nextQuoteId;
+    return true;
+  } catch(e) { console.warn('Error cargando datos:', e); return false; }
+}
+
+function resetAllData() {
+  if(!confirm('⚠️ ¿Borrar TODOS los datos y volver a los datos de ejemplo?\n\nEsta acción no se puede deshacer.')) return;
+  localStorage.removeItem(DB_KEY);
+  location.reload();
+}
+
+// Autosave cada 30 segundos
+setInterval(saveData, 30000);
 
 // ── STATE ──
 let currentUser = null;
@@ -1277,6 +1487,7 @@ function doLogin() {
 
 function logout() {
   if(currentEmployee) logActivity(currentEmployee, 'logout', 'Cierre de sesión', '🚪');
+  saveData();
   currentUser=null; currentEmployee=null; cart=[]; quoteCart=[];
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app').style.display='none';
@@ -1336,6 +1547,7 @@ function buildNav(isAdmin) {
   if(hasPerm('reports'))   nav+=`<div class="nav-item" onclick="navigate('reports')"><span class="nav-icon">📈</span>Reportes de Caja</div>`;
   if(hasPerm('employees')) nav+=`<div class="nav-item" onclick="navigate('employees')"><span class="nav-icon">🧑‍💼</span>Empleados</div>`;
   if(hasPerm('employees')) nav+=`<div class="nav-item" onclick="navigate('activity');buildActivity()"><span class="nav-icon">📜</span>Historial</div>`;
+  if(hasPerm('reports'))   nav+=`<div class="nav-item" onclick="window.open('https://analytics.google.com/analytics/web/#/p${488230741}/reports/intelligenthome','_blank')" style="color:var(--accent)"><span class="nav-icon">📊</span>Ver Analytics</div>`;
   document.getElementById('nav-menu').innerHTML = nav;
 }
 
@@ -1422,6 +1634,7 @@ function renderCart() {
   document.getElementById('cart-iva').textContent = `$${iva.toLocaleString('es-MX',{minimumFractionDigits:2})}`;
   document.getElementById('cart-total').textContent = `$${total.toLocaleString('es-MX',{minimumFractionDigits:2})}`;
   document.getElementById('checkout-btn').disabled = !cart.length;
+  updateMobileCartBtn();
 }
 
 function cartQty(id,d) {
@@ -2703,14 +2916,48 @@ function filterActivity() {
 function buildActivity() { renderActivityLog(activityLog); }
 
 function showToast(msg, dur=3000) {
+  if(msg.startsWith('✅') || msg.startsWith('🗑️') || msg.startsWith('💳') || msg.startsWith('🔒') || msg.startsWith('🔓')) {
+    saveData();
+    const ind = document.getElementById('save-indicator');
+    if(ind) { ind.style.display='block'; clearTimeout(ind._t); ind._t=setTimeout(()=>ind.style.display='none',2500); }
+  }
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
   clearTimeout(t._timer);
   t._timer=setTimeout(()=>t.classList.remove('show'),dur);
 }
 
+// ── MOBILE HELPERS ──
+function isMobile() { return window.innerWidth <= 768; }
+
+function toggleMobileCart() {
+  const panel = document.querySelector('.cart-panel');
+  const btn = document.getElementById('cart-toggle-btn');
+  if(!panel) return;
+  panel.classList.toggle('open');
+  btn.textContent = panel.classList.contains('open') ? '✕ Cerrar carrito' : `🛒 Ver carrito ${cart.length ? `(${cart.length})` : ''}`;
+}
+
+function updateMobileCartBtn() {
+  const btn = document.getElementById('cart-toggle-btn');
+  if(!btn) return;
+  if(isMobile()) {
+    btn.style.display = 'block';
+    const isOpen = document.querySelector('.cart-panel')?.classList.contains('open');
+    btn.textContent = isOpen ? '✕ Cerrar carrito' : `🛒 Ver carrito${cart.length ? ` (${cart.length})` : ''}`;
+  } else {
+    btn.style.display = 'none';
+    document.querySelector('.cart-panel')?.classList.remove('open');
+  }
+}
+
+window.addEventListener('resize', updateMobileCartBtn);
+
 // ── KEY ──
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none') doLogin(); });
+
+// Cargar datos guardados al iniciar
+loadData();
 </script>
 </body>
 </html>

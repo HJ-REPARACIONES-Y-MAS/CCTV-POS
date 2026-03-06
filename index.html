@@ -5,6 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HJ Reparaciones y Más — Frontera, Coahuila</title>
 <meta name="description" content="Instalación de CCTV, reparación de equipos, redes, instalaciones eléctricas y venta de accesorios en Frontera, Coahuila.">
+
+<!-- Google Analytics G-YTZ9RVD82X -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-YTZ9RVD82X"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-YTZ9RVD82X');
+
+  // Función helper para registrar eventos
+  function trackClick(action, label) {
+    gtag('event', action, {
+      event_category: 'interaccion',
+      event_label: label,
+    });
+  }
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -341,9 +358,54 @@
     .why-grid { grid-template-columns: 1fr; }
     .nav-links { display: none; }
   }
+
+  /* ── MOBILE ── */
   @media (max-width: 600px) {
-    .hero-stats { gap: 24px; }
-    .hero-stats .stat strong { font-size: 32px; }
+    /* Nav */
+    nav { padding: 14px 5%; }
+    .nav-logo { font-size: 15px; }
+    .nav-cta { padding: 9px 16px; font-size: 13px; }
+
+    /* Hero */
+    .hero { padding: 80px 5% 50px; min-height: auto; }
+    .hero h1 { font-size: clamp(44px, 13vw, 64px); }
+    .hero p { font-size: 15px; margin-bottom: 28px; }
+    .hero-btns { flex-direction: column; gap: 10px; }
+    .btn-primary, .btn-secondary {
+      width: 100%; justify-content: center;
+      padding: 16px 24px; font-size: 16px;
+      border-radius: 12px;
+    }
+    .hero-stats { gap: 24px; flex-wrap: wrap; margin-top: 40px; }
+    .hero-stats .stat strong { font-size: 34px; }
+
+    /* Services */
+    .services-grid { grid-template-columns: 1fr; gap: 12px; }
+    .service-card { padding: 20px; }
+    .service-icon { font-size: 36px; margin-bottom: 10px; }
+    .service-card h3 { font-size: 17px; }
+    .service-card p { font-size: 13px; }
+
+    /* Why */
+    .why-section { padding: 60px 5%; }
+    .why-item { gap: 14px; }
+    .why-icon { width: 44px; height: 44px; font-size: 20px; flex-shrink: 0; }
+
+    /* CTA */
+    .cta-section { padding: 60px 5%; }
+    .cta-section h2 { font-size: clamp(34px, 10vw, 52px); }
+    .cta-section p { font-size: 14px; margin-bottom: 28px; }
+    .cta-btns { flex-direction: column; align-items: stretch; gap: 10px; }
+    .cta-btns a { text-align: center; justify-content: center; padding: 16px 24px; font-size: 15px; border-radius: 12px; }
+
+    /* Footer */
+    footer { flex-direction: column; text-align: center; padding: 32px 5%; gap: 12px; }
+    .footer-links { justify-content: center; flex-wrap: wrap; gap: 14px; }
+
+    /* WhatsApp btn */
+    .whatsapp-btn { width: 56px; height: 56px; bottom: 20px; right: 20px; }
+    .whatsapp-btn svg { width: 28px; height: 28px; }
+    .wa-tooltip { display: none; }
   }
 </style>
 </head>
@@ -355,12 +417,13 @@
     <div class="logo-badge">🔧</div>
     HJ Reparaciones y Más
   </div>
-  <div class="nav-links">
+  <div class="nav-links" id="nav-links">
     <a href="#servicios">Servicios</a>
     <a href="#nosotros">Nosotros</a>
     <a href="#contacto">Contacto</a>
-    <a href="cctv-pos.html" class="nav-cta">Portal Cliente</a>
+    <a href="cctv-pos.html" class="nav-cta" onclick="trackClick('click_portal','nav_portal_cliente')">Portal Cliente</a>
   </div>
+  <button id="nav-burger" onclick="toggleMenu()" style="display:none;background:none;border:none;cursor:pointer;padding:8px;color:var(--white);font-size:24px;line-height:1" aria-label="Menú">☰</button>
 </nav>
 
 <!-- HERO -->
@@ -376,7 +439,7 @@
     <h1>TU NEGOCIO<br><span>SIEMPRE</span><br>PROTEGIDO</h1>
     <p>Instalación de cámaras CCTV, reparación de equipos, redes, instalaciones eléctricas y venta de accesorios. Servicio profesional en Frontera y la región.</p>
     <div class="hero-btns">
-      <a href="https://wa.me/528661755216?text=Hola,%20me%20interesa%20un%20servicio" class="btn-primary" target="_blank">
+      <a href="https://wa.me/528661755216?text=Hola,%20me%20interesa%20un%20servicio" class="btn-primary" target="_blank" onclick="trackClick('click_whatsapp','hero_cotizar')">
         💬 Cotizar por WhatsApp
       </a>
       <a href="#servicios" class="btn-secondary">Ver servicios →</a>
@@ -551,10 +614,10 @@
   <h2>¿LISTO PARA<br>EMPEZAR?</h2>
   <p>Escríbenos por WhatsApp y te damos una cotización gratis en minutos.</p>
   <div class="cta-btns">
-    <a href="https://wa.me/528661755216?text=Hola,%20quiero%20una%20cotizaci%C3%B3n%20gratuita" class="btn-primary" target="_blank">
+    <a href="https://wa.me/528661755216?text=Hola,%20quiero%20una%20cotizaci%C3%B3n%20gratuita" class="btn-primary" target="_blank" onclick="trackClick('click_whatsapp','cta_cotizacion_gratis')">
       💬 Cotización gratis por WhatsApp
     </a>
-    <a href="cctv-pos.html" class="btn-secondary">
+    <a href="cctv-pos.html" class="btn-secondary" onclick="trackClick('click_portal','cta_portal_clientes')">
       🛒 Portal de clientes
     </a>
   </div>
@@ -576,12 +639,49 @@
 
 <!-- WHATSAPP FLOTANTE -->
 <a href="https://wa.me/528661755216?text=Hola,%20me%20interesa%20un%20servicio" 
-   class="whatsapp-btn" target="_blank" title="Escríbenos por WhatsApp">
+   class="whatsapp-btn" target="_blank" title="Escríbenos por WhatsApp" onclick="trackClick('click_whatsapp','boton_flotante')">
   <div class="wa-tooltip">¡Escríbenos ahora! 💬</div>
   <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
   </svg>
 </a>
 
+<style>
+@media (max-width: 600px) {
+  #nav-burger { display:block !important; }
+  #nav-links {
+    display: none;
+    position: fixed; top: 56px; left: 0; right: 0;
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    flex-direction: column; padding: 16px 5%; gap: 0; z-index: 999;
+  }
+  #nav-links.open { display: flex !important; }
+  #nav-links a {
+    padding: 14px 0; font-size: 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--white); text-decoration: none;
+  }
+  #nav-links a:last-child { border-bottom: none; margin-top: 8px; }
+  #nav-links .nav-cta {
+    display: block; text-align: center;
+    padding: 14px; border-radius: 10px; margin-top: 4px;
+  }
+}
+</style>
+<script>
+function toggleMenu() {
+  const links = document.getElementById('nav-links');
+  const burger = document.getElementById('nav-burger');
+  links.classList.toggle('open');
+  burger.textContent = links.classList.contains('open') ? '✕' : '☰';
+}
+// Close menu when clicking a link
+document.querySelectorAll('#nav-links a').forEach(a => {
+  a.addEventListener('click', () => {
+    document.getElementById('nav-links').classList.remove('open');
+    document.getElementById('nav-burger').textContent = '☰';
+  });
+});
+</script>
 </body>
 </html>
