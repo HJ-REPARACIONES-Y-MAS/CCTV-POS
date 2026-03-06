@@ -3538,7 +3538,7 @@ async function initPosFirebase() {
   if(posDb) return posDb;
   try {
     const { initializeApp, getApps } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const { getDatabase, ref, onChildAdded, onChildChanged, push, set, serverTimestamp, onValue }
+    const { getDatabase, ref, onChildAdded, push, set, serverTimestamp, onValue }
       = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
 
     const firebaseConfig = {
@@ -3554,14 +3554,47 @@ async function initPosFirebase() {
 
     const apps = getApps();
     const app = apps.find(a=>a.name==='pos-chat') || initializeApp(firebaseConfig, 'pos-chat');
-    posDb = { db: getDatabase(app), ref, onChildAdded, onChildChanged, push, set, serverTimestamp, onValue };
+    const db = getDatabase(app);
+    posDb = { db, ref, onChildAdded, push, set, serverTimestamp, onValue };
 
-    // Listen for all sessions
-    onChildAdded(ref(posDb.db, 'chats'), snap => {
-      listenSession(snap.key, snap.val());
-    });
-    onChildChanged(ref(posDb.db, 'chats'), snap => {
-      listenSession(snap.key, snap.val());
+    // Each child of /chats is a session
+    onChildAdded(ref(db, 'chats'), snap => {
+      const sid = snap.key;
+      if(chatSessions[sid]) return;
+      chatSessions[sid] = { id: sid, info: { visitorName: 'Visitante' }, messages: [], unread: 0 };
+
+      // Watch session info
+      onValue(ref(db, 'chats/' + sid + '/info'), infoSnap => {
+        if(infoSnap.val() && chatSessions[sid]) {
+          chatSessions[sid].info = infoSnap.val();
+          renderSessionsList();
+        }
+      });
+
+      // Watch all messages (fires for existing + new)
+      onChildAdded(ref(db, 'chats/' + sid + '/messages'), msgSnap => {
+        const msg = msgSnap.val();
+        if(!msg) return;
+        if(chatSessions[sid].messages.find(m => m.key === msgSnap.key)) return;
+        chatSessions[sid].messages.push({ ...msg, key: msgSnap.key });
+
+        if(msg.from === 'visitor' && activeChatSession !== sid) {
+          chatSessions[sid].unread = (chatSessions[sid].unread || 0) + 1;
+          chatUnreadTotal++;
+          updateChatBadge();
+        }
+        renderSessionsList();
+
+        // Live append if panel is open and already rendered
+        const container = document.getElementById('pos-chat-messages');
+        if(activeChatSession === sid && container && container.dataset.loaded === 'true') {
+          appendPosChatMsg(msg.text, msg.from,
+            msg.from === 'agent' ? 'HJ Reparaciones' : (msg.visitorName || 'Visitante'),
+            msg.time);
+        }
+      });
+
+      renderSessionsList();
     });
 
     return posDb;
@@ -3569,35 +3602,6 @@ async function initPosFirebase() {
     console.warn('Firebase POS error:', e);
     return null;
   }
-}
-
-function listenSession(sessionId, data) {
-  if(!data || !data.info) return;
-  if(!chatSessions[sessionId]) {
-    chatSessions[sessionId] = { id: sessionId, info: data.info, messages: [], unread: 0 };
-    // Listen for new messages in this session
-    const { ref, onChildAdded } = posDb;
-    onChildAdded(ref(posDb.db, `chats/${sessionId}/messages`), snap => {
-      const msg = snap.val();
-      if(!msg) return;
-      if(!chatSessions[sessionId]) chatSessions[sessionId] = { id:sessionId, info:data.info, messages:[], unread:0 };
-      chatSessions[sessionId].messages.push({...msg, key: snap.key});
-      // Count unread from visitor
-      if(msg.from === 'visitor' && activeChatSession !== sessionId) {
-        chatSessions[sessionId].unread = (chatSessions[sessionId].unread||0) + 1;
-        chatUnreadTotal++;
-        updateChatBadge();
-      }
-      renderSessionsList();
-      // If this session is active, append message
-      if(activeChatSession === sessionId && msg.from === 'visitor') {
-        appendPosChatMsg(msg.text, 'visitor', msg.visitorName, msg.time);
-      }
-    });
-  } else {
-    chatSessions[sessionId].info = data.info;
-  }
-  renderSessionsList();
 }
 
 function renderSessionsList() {
@@ -3636,10 +3640,12 @@ function openChatSession(sessionId) {
   // Render all messages
   const container = document.getElementById('pos-chat-messages');
   if(container) {
+    container.dataset.loaded = 'false';
     container.innerHTML = '';
     session.messages.forEach(msg => {
       appendPosChatMsg(msg.text, msg.from, msg.from==='agent'?'HJ Reparaciones':(msg.visitorName||name), msg.time);
     });
+    container.dataset.loaded = 'true'; // allow live appending now
   }
   // Show input
   const inputArea = document.getElementById('pos-chat-input-area');

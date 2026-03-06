@@ -867,6 +867,7 @@ document.querySelectorAll('#nav-links a').forEach(a => {
   let chatOpen = false;
   let unreadCount = 0;
   let chatFirebase = null; // set by module when ready
+  let pendingSession = null; // queued if Firebase not ready yet
   let visitorName = null;
 
   function toggleChat() {
@@ -888,9 +889,14 @@ document.querySelectorAll('#nav-links a').forEach(a => {
     document.getElementById('chat-ask-name').style.display = 'none';
     document.getElementById('chat-input-area').classList.add('active');
     document.getElementById('chat-msg-input').focus();
-    // Delegate to Firebase module
-    if(chatFirebase) chatFirebase.startSession(name);
-    else enableOfflineMode();
+    const firstMsg = '👋 Hola, soy ' + name + '. Me gustaría hacer una consulta.';
+    appendMessage(firstMsg, 'from-client', null, name);
+    if(chatFirebase) {
+      chatFirebase.startSession(name, firstMsg);
+    } else {
+      // Firebase module still loading — queue it
+      pendingSession = { name, firstMsg };
+    }
   }
 
   function sendChatMsg() {
@@ -898,7 +904,9 @@ document.querySelectorAll('#nav-links a').forEach(a => {
     const text = el?.value.trim();
     if(!text) return;
     el.value = ''; el.style.height = 'auto';
+    // Show immediately in UI
     appendMessage(text, 'from-client', null, visitorName||'Tú');
+    // Send to Firebase
     if(chatFirebase) chatFirebase.sendMsg(text);
   }
 
@@ -968,7 +976,7 @@ document.querySelectorAll('#nav-links a').forEach(a => {
 
     // Expose API to UI script
     window.chatFirebase = {
-      startSession(name) {
+      startSession(name, firstMsg) {
         sessionId = getSessionId();
         chatRef = ref(db, `chats/${sessionId}`);
         set(ref(db, `chats/${sessionId}/info`), {
@@ -986,8 +994,12 @@ document.querySelectorAll('#nav-links a').forEach(a => {
           const el = document.getElementById('chat-typing');
           if(el) el.style.display = snap.val() ? 'block' : 'none';
         });
-        // Auto first message
-        this.sendMsg('👋 Hola, soy ' + name + '. Me gustaría hacer una consulta.');
+        // Send first message to Firebase (already shown in UI)
+        if(firstMsg) push(ref(db, `chats/${sessionId}/messages`), {
+          text: firstMsg, from: 'visitor', visitorName: name,
+          time: new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
+          ts: serverTimestamp(), read: false
+        });
       },
       sendMsg(text) {
         if(!sessionId) return;
@@ -998,6 +1010,11 @@ document.querySelectorAll('#nav-links a').forEach(a => {
         });
       }
     };
+    // Flush any session that started before Firebase finished loading
+    if(window.pendingSession) {
+      window.chatFirebase.startSession(window.pendingSession.name, window.pendingSession.firstMsg);
+      window.pendingSession = null;
+    }
   } catch(e) {
     console.warn('Firebase no disponible:', e);
   }
