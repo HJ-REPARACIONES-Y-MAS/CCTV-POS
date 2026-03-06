@@ -3531,113 +3531,55 @@ window.addEventListener('resize', applyMobileClass);
 // Apply on load
 applyMobileClass();
 
-// ── CHAT EN VIVO (Firebase) ──
+// ── CHAT EN VIVO ──
 let posDb = null, activeChatSession = null, chatSessions = {}, chatUnreadTotal = 0;
 
-async function initPosFirebase() {
-  if(posDb) return posDb;
-  try {
-    const { initializeApp, getApps } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const { getDatabase, ref, onChildAdded, push, set, serverTimestamp, onValue }
-      = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js');
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBwHRcdelW9-bN9A6aH8qgecX_--V0_v8I",
-      authDomain: "hj-reparaciones-chat.firebaseapp.com",
-      databaseURL: "https://hj-reparaciones-chat-default-rtdb.firebaseio.com",
-      projectId: "hj-reparaciones-chat",
-      storageBucket: "hj-reparaciones-chat.firebasestorage.app",
-      messagingSenderId: "970106362467",
-      appId: "1:970106362467:web:da6e3a3b8a84bbdb7f7656",
-      measurementId: "G-R0LDPX5WF2"
-    };
-
-    const apps = getApps();
-    const app = apps.find(a=>a.name==='pos-chat') || initializeApp(firebaseConfig, 'pos-chat');
-    const db = getDatabase(app);
-    posDb = { db, ref, onChildAdded, push, set, serverTimestamp, onValue };
-
-    // Each child of /chats is a session
-    onChildAdded(ref(db, 'chats'), snap => {
-      const sid = snap.key;
-      if(chatSessions[sid]) return;
-      chatSessions[sid] = { id: sid, info: { visitorName: 'Visitante' }, messages: [], unread: 0 };
-
-      // Watch session info
-      onValue(ref(db, 'chats/' + sid + '/info'), infoSnap => {
-        if(infoSnap.val() && chatSessions[sid]) {
-          chatSessions[sid].info = infoSnap.val();
-          renderSessionsList();
-        }
-      });
-
-      // Watch all messages (fires for existing + new)
-      onChildAdded(ref(db, 'chats/' + sid + '/messages'), msgSnap => {
-        const msg = msgSnap.val();
-        if(!msg) return;
-        if(chatSessions[sid].messages.find(m => m.key === msgSnap.key)) return;
-        chatSessions[sid].messages.push({ ...msg, key: msgSnap.key });
-
-        if(msg.from === 'visitor' && activeChatSession !== sid) {
-          chatSessions[sid].unread = (chatSessions[sid].unread || 0) + 1;
-          chatUnreadTotal++;
-          updateChatBadge();
-        }
-        renderSessionsList();
-
-        // Live append if panel is open and already rendered
-        const container = document.getElementById('pos-chat-messages');
-        if(activeChatSession === sid && container && container.dataset.loaded === 'true') {
-          appendPosChatMsg(msg.text, msg.from,
-            msg.from === 'agent' ? 'HJ Reparaciones' : (msg.visitorName || 'Visitante'),
-            msg.time);
-        }
-      });
-
-      renderSessionsList();
-    });
-
-    return posDb;
-  } catch(e) {
-    console.warn('Firebase POS error:', e);
-    return null;
-  }
+function buildChatPanel() {
+  renderSessionsList();
 }
 
 function renderSessionsList() {
   const el = document.getElementById('chat-sessions-list');
   if(!el) return;
   const sessions = Object.values(chatSessions);
-  if(!sessions.length) return;
+  if(!sessions.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--text3);padding:40px 16px;font-size:13px"><div style="font-size:32px;margin-bottom:10px">&#x1F4AC;</div>Sin conversaciones aun.<br>Aparecern aqui cuando alguien escriba desde la web.</div>';
+    return;
+  }
   el.innerHTML = sessions.map(s => {
     const lastMsg = s.messages[s.messages.length-1];
     const isActive = activeChatSession === s.id;
     const unread = s.unread || 0;
-    return `<div onclick="openChatSession('${s.id}')" style="padding:12px;border-radius:10px;cursor:pointer;margin-bottom:6px;background:${isActive?'rgba(0,229,255,0.08)':'var(--surface2)'};border:1px solid ${isActive?'var(--accent)':'var(--border)'};transition:all 0.2s">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <span style="font-weight:700;font-size:13px">${escPOS(s.info?.visitorName||'Visitante')}</span>
-        ${unread>0?`<span style="background:var(--accent2);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">${unread}</span>`:''}
-      </div>
-      <div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lastMsg?escPOS(lastMsg.text.substring(0,50)):'Sin mensajes'}</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:3px">${lastMsg?.time||''}</div>
-    </div>`;
+    const bg = isActive ? 'rgba(0,229,255,0.08)' : 'var(--surface2)';
+    const border = isActive ? 'var(--accent)' : 'var(--border)';
+    const name = escPOS(s.info && s.info.visitorName ? s.info.visitorName : 'Visitante');
+    const preview = lastMsg ? escPOS(lastMsg.text.substring(0,50)) : 'Sin mensajes';
+    const t = lastMsg && lastMsg.time ? lastMsg.time : '';
+    const badge = unread > 0 ? '<span style="background:var(--accent2);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">' + unread + '</span>' : '';
+    return '<div onclick="openChatSession(\'' + s.id + '\')" style="padding:12px;border-radius:10px;cursor:pointer;margin-bottom:6px;background:' + bg + ';border:1px solid ' + border + ';transition:all 0.2s">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
+      + '<span style="font-weight:700;font-size:13px">' + name + '</span>' + badge
+      + '</div>'
+      + '<div style="font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + preview + '</div>'
+      + '<div style="font-size:10px;color:var(--text3);margin-top:3px">' + t + '</div>'
+      + '</div>';
   }).join('');
 }
+
 
 function openChatSession(sessionId) {
   activeChatSession = sessionId;
   const session = chatSessions[sessionId];
   if(!session) return;
-  // Reset unread
   chatUnreadTotal -= (session.unread||0);
   session.unread = 0;
   updateChatBadge();
   renderSessionsList();
-  // Update header
   const name = session.info?.visitorName || 'Visitante';
-  document.getElementById('active-chat-name').textContent = '💬 ' + name;
-  document.getElementById('active-chat-meta').textContent = `Sesión iniciada · ${session.info?.startedAt ? new Date(session.info.startedAt).toLocaleString('es-MX') : ''}`;
-  // Render all messages
+  const nameEl = document.getElementById('active-chat-name');
+  const metaEl = document.getElementById('active-chat-meta');
+  if(nameEl) nameEl.textContent = '💬 ' + name;
+  if(metaEl) metaEl.textContent = 'Sesión activa · ' + (session.info?.startedAt ? new Date(session.info.startedAt).toLocaleString('es-MX') : '');
   const container = document.getElementById('pos-chat-messages');
   if(container) {
     container.dataset.loaded = 'false';
@@ -3645,13 +3587,11 @@ function openChatSession(sessionId) {
     session.messages.forEach(msg => {
       appendPosChatMsg(msg.text, msg.from, msg.from==='agent'?'HJ Reparaciones':(msg.visitorName||name), msg.time);
     });
-    container.dataset.loaded = 'true'; // allow live appending now
+    container.dataset.loaded = 'true';
   }
-  // Show input
   const inputArea = document.getElementById('pos-chat-input-area');
   if(inputArea) { inputArea.style.display='flex'; document.getElementById('pos-reply-input')?.focus(); }
-  // Set agent typing indicator off
-  if(posDb) posDb.set(posDb.ref(posDb.db, `chats/${sessionId}/agentTyping`), false);
+  if(posDb) posDb.set(posDb.ref(posDb.db, 'chats/' + sessionId + '/agentTyping'), false);
 }
 
 function appendPosChatMsg(text, from, sender, time) {
@@ -3660,12 +3600,9 @@ function appendPosChatMsg(text, from, sender, time) {
   const isAgent = from === 'agent';
   const t = time || new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
   const div = document.createElement('div');
-  div.style.cssText = `display:flex;flex-direction:column;max-width:75%;${isAgent?'align-self:flex-end;align-items:flex-end':'align-self:flex-start;align-items:flex-start'}`;
-  div.innerHTML = `
-    <div style="padding:10px 14px;border-radius:${isAgent?'14px 14px 4px 14px':'14px 14px 14px 4px'};font-size:13px;line-height:1.5;word-break:break-word;background:${isAgent?'var(--accent)':'var(--surface2)'};color:${isAgent?'#000':'var(--text)'};border:${isAgent?'none':'1px solid var(--border)'}">
-      ${escPOS(text)}
-    </div>
-    <div style="font-size:10px;color:var(--text3);margin-top:3px;padding:0 4px">${escPOS(sender)} · ${t}</div>`;
+  div.style.cssText = 'display:flex;flex-direction:column;max-width:75%;' + (isAgent?'align-self:flex-end;align-items:flex-end':'align-self:flex-start;align-items:flex-start');
+  div.innerHTML = '<div style="padding:10px 14px;border-radius:' + (isAgent?'14px 14px 4px 14px':'14px 14px 14px 4px') + ';font-size:13px;line-height:1.5;word-break:break-word;background:' + (isAgent?'var(--accent)':'var(--surface2)') + ';color:' + (isAgent?'#000':'var(--text)') + ';border:' + (isAgent?'none':'1px solid var(--border)') + '">' + escPOS(text) + '</div>'
+    + '<div style="font-size:10px;color:var(--text3);margin-top:3px;padding:0 4px">' + escPOS(sender) + ' · ' + t + '</div>';
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
 }
@@ -3678,7 +3615,7 @@ async function posSendReply() {
   const time = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
   appendPosChatMsg(text, 'agent', 'HJ Reparaciones', time);
   if(posDb) {
-    await posDb.push(posDb.ref(posDb.db, `chats/${activeChatSession}/messages`), {
+    await posDb.push(posDb.ref(posDb.db, 'chats/' + activeChatSession + '/messages'), {
       text, from: 'agent', time, ts: posDb.serverTimestamp(), read: false
     });
   }
@@ -3701,16 +3638,88 @@ function escPOS(t) {
   return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
 }
 
-function buildChatPanel() {
-  initPosFirebase();
-  renderSessionsList();
-}
-
 // ── KEY ──
 document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none') doLogin(); });
 
 // Cargar datos guardados al iniciar
 loadData();
+</script>
+
+<!-- POS Firebase Chat Module -->
+<script type="module">
+  import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import { getDatabase, ref, onChildAdded, onValue, push, set, serverTimestamp }
+    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBwHRcdelW9-bN9A6aH8qgecX_--V0_v8I",
+    authDomain: "hj-reparaciones-chat.firebaseapp.com",
+    databaseURL: "https://hj-reparaciones-chat-default-rtdb.firebaseio.com",
+    projectId: "hj-reparaciones-chat",
+    storageBucket: "hj-reparaciones-chat.firebasestorage.app",
+    messagingSenderId: "970106362467",
+    appId: "1:970106362467:web:da6e3a3b8a84bbdb7f7656",
+    measurementId: "G-R0LDPX5WF2"
+  };
+
+  try {
+    const apps = getApps();
+    const app = apps.find(a => a.name === 'pos-chat') || initializeApp(firebaseConfig, 'pos-chat');
+    const db = getDatabase(app);
+
+    // Expose to global scope for posSendReply etc
+    window.posDb = { db, ref, push, set, serverTimestamp, onValue };
+
+    // Listen for new chat sessions
+    onChildAdded(ref(db, 'chats'), snap => {
+      const sid = snap.key;
+      if(window.chatSessions[sid]) return;
+      window.chatSessions[sid] = { id: sid, info: { visitorName: 'Visitante' }, messages: [], unread: 0 };
+
+      // Watch session info
+      onValue(ref(db, 'chats/' + sid + '/info'), infoSnap => {
+        const info = infoSnap.val();
+        if(info && window.chatSessions[sid]) {
+          window.chatSessions[sid].info = info;
+          window.renderSessionsList();
+        }
+      });
+
+      // Watch messages
+      onChildAdded(ref(db, 'chats/' + sid + '/messages'), msgSnap => {
+        const msg = msgSnap.val();
+        if(!msg) return;
+        const session = window.chatSessions[sid];
+        if(!session) return;
+        if(session.messages.find(m => m.key === msgSnap.key)) return;
+        session.messages.push({ ...msg, key: msgSnap.key });
+
+        // Unread count
+        if(msg.from === 'visitor' && window.activeChatSession !== sid) {
+          session.unread = (session.unread || 0) + 1;
+          window.chatUnreadTotal++;
+          window.updateChatBadge();
+        }
+        window.renderSessionsList();
+
+        // Live append if this session is open
+        const container = document.getElementById('pos-chat-messages');
+        if(window.activeChatSession === sid && container && container.dataset.loaded === 'true') {
+          window.appendPosChatMsg(
+            msg.text, msg.from,
+            msg.from === 'agent' ? 'HJ Reparaciones' : (msg.visitorName || 'Visitante'),
+            msg.time
+          );
+        }
+      });
+
+      window.renderSessionsList();
+    });
+
+    console.log('✅ POS Firebase chat listo');
+  } catch(e) {
+    console.error('❌ Firebase POS error:', e);
+  }
 </script>
 </body>
 </html>
